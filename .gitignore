@@ -1,0 +1,25 @@
+# LaTeX build artifacts
+*.aux
+*.log
+*.bbl
+*.blg
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+*.pdf
+!paper.pdf
+
+# OS / editor cruft
+.DS_Store
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Python (in case we add experiment scripts here)
+__pycache__/
+*.pyc
+.ipynb_checkpoints/

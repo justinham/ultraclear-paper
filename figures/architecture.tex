@@ -1,0 +1,76 @@
+% =============================================================================
+% Architecture overview figure for UltraClear.
+% Compile via \input{} from main.tex (which sets up the tikz package).
+% =============================================================================
+\begin{tikzpicture}[
+  font=\sffamily\small,
+  node distance=8mm and 6mm,
+  every node/.style={transform shape},
+  zone/.style={draw, dashed, rounded corners, inner sep=4pt, thick},
+  block/.style={draw, rounded corners, minimum width=18mm, minimum height=9mm, align=center, fill=blue!8},
+  acc/.style={draw, rounded corners, minimum width=18mm, minimum height=9mm, align=center, fill=orange!15},
+  feat/.style={draw, rounded corners, minimum width=18mm, minimum height=9mm, align=center, fill=teal!15},
+  adv/.style={draw, rounded corners, minimum width=18mm, minimum height=9mm, align=center, fill=red!15},
+  in/.style={draw, rounded corners, minimum width=18mm, minimum height=9mm, align=center, fill=blue!20},
+  arr/.style={->, >=stealth, thick},
+]
+
+% --- Tier 0 ---
+\begin{scope}[local bounding box=t0]
+  \node[zone, minimum width=140mm, minimum height=22mm] (t0zone) {};
+  \node[anchor=north west] at (t0zone.north west) {\textbf{TIER 0}};
+  \node[in]    (raw)  at (0,0)      {Unlabeled\\UWB};
+  \node[block] (aug)  at (28mm,0)   {Augment-\\ations};
+  \node[acc]   (mp)   at (60mm,0)   {(A) Masked\\Prediction};
+  \node[feat]  (enc)  at (98mm,0)   {Encoder\\$f_\theta$};
+  \draw[arr] (raw) -- (aug);
+  \draw[arr] (aug) -- (mp);
+  \draw[arr] (mp) -- (enc);
+\end{scope}
+
+% --- Tier 1 ---
+\begin{scope}[local bounding box=t1, shift={(0,-18mm)}]
+  \node[zone, minimum width=140mm, minimum height=22mm] (t1zone) {};
+  \node[anchor=north west] at (t1zone.north west) {\textbf{TIER 1}};
+  \node[feat] (enc1) at (0,0)    {Encoder\\$f_\theta$};
+  \node[block](asta) at (32mm,0) {ASTA\\Encoder};
+  \node[acc]  (maml) at (66mm,0) {FOMAML\\outer loop};
+  \node[in]   (init) at (102mm,0){$\theta^*$ init};
+  \draw[arr] (enc1) -- (asta);
+  \draw[arr] (asta) -- (maml);
+  \draw[arr] (maml) -- (init);
+\end{scope}
+
+% --- Tier 2 ---
+\begin{scope}[local bounding box=t2, shift={(0,-36mm)}]
+  \node[zone, minimum width=140mm, minimum height=22mm] (t2zone) {};
+  \node[anchor=north west] at (t2zone.north west) {\textbf{TIER 2}};
+  \node[block](hphi) at (8mm,0)  {$h_\phi$\\micro enc.};
+  \node[block](film) at (40mm,0) {FiLM\\$H' = \gamma \odot H + \beta$};
+  \node[adv]  (adv)  at (78mm,0) {Adversary $D$\\grad.-reversal};
+  \node[feat] (hout) at (118mm,0){$H'$ features};
+  \draw[arr] (hphi) -- (film);
+  \draw[arr] (hphi) |- (adv);
+  \draw[arr] (adv)  -- (hout);
+  \draw[arr] (film) -- (hout);
+\end{scope}
+
+% --- Tier 3 ---
+\begin{scope}[local bounding box=t3, shift={(0,-54mm)}]
+  \node[zone, minimum width=140mm, minimum height=22mm] (t3zone) {};
+  \node[anchor=north west] at (t3zone.north west) {\textbf{TIER 3}};
+  \node[feat] (hin)  at (0,0)    {$H'$};
+  \node[block](nlos) at (30mm,0) {NLOS ID\\head};
+  \node[block](rest) at (62mm,0) {Restoration\\head};
+  \node[block](loc)  at (100mm,0) {Location\\$(x,y)$};
+  \draw[arr] (hin) -- (nlos);
+  \draw[arr] (hin) -- (rest);
+  \draw[arr] (rest)-- (loc);
+\end{scope}
+
+% --- inter-tier arrows ---
+\draw[arr] (enc.south) -- (enc1.north);
+\draw[arr] (init.south) -- (hphi.north);
+\draw[arr] (hout.south) -- (hin.north);
+
+\end{tikzpicture}

@@ -1,0 +1,242 @@
+% =============================================================================
+% UltraClear: A 4-Tier Architecture for Physical-Layer OOD Generalization
+%             in UWB Localization
+%
+% Main file. Compile with pdflatex + bibtex.
+% Sections are in sections/ for readability.
+% Figures are TikZ in figures/ as standalone .tex files.
+% =============================================================================
+\documentclass[11pt,letterpaper]{article}
+
+% --- packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{tikz}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{xcolor}
+\usepackage{geometry}
+\geometry{margin=1in}
+
+% --- math shortcuts ---
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+% --- hyperref styling ---
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  citecolor=blue!50!black,
+  urlcolor=blue!50!black,
+}
+
+% --- title ---
+\title{\textbf{UltraClear}: A 4-Tier Architecture for Physical-Layer\\
+  Out-of-Distribution Generalization in UWB Localization}
+
+\author{Justin Ham \\ \small \texttt{justinham@github}}
+
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% =============================================================================
+\begin{abstract}
+We present \textsc{UltraClear}, a four-tier hierarchical architecture for
+ultra-wideband (UWB) indoor localization that targets a specific
+instance of domain generalization: \emph{physical-layer
+out-of-distribution (OOD) generalization}, in which a model must
+adapt to unseen deployment environments with only a handful of
+labeled shots and no possibility of online fine-tuning.
+
+The architecture stacks four components, each addressing a distinct
+source of distribution shift.
+\textbf{Tier 0} is a self-supervised masked-prediction pretraining
+stage that learns measurement-structure features from abundant
+unlabeled UWB streams.
+\textbf{Tier 1} is a first-order Model-Agnostic Meta-Learning
+(FOMAML) outer loop that learns an environment-invariant
+\emph{initialization} by treating each deployment environment as a
+meta-task.
+\textbf{Tier 2} introduces a \emph{disentangled micro-condition}
+representation via Feature-wise Linear Modulation (FiLM) coupled with
+a gradient-reversal adversary, enabling the model to compose
+macro-environment and micro-propagation-condition representations
+at test time even when a specific combination was never seen in
+training.
+\textbf{Tier 3} stacks the downstream heads (NLOS identification,
+signal restoration, and location estimation) on top of the
+disentangled features.
+
+We evaluate the architecture under a three-tier protocol that
+mirrors the actual physics of environment variation: (i)
+seen-macro / unseen-micro, (ii) unseen-macro, and (iii)
+unseen-device. The protocol is enabled by a Sionna ray-tracing
+emulator that provides ground-truth positions, anchor layouts, and
+labeled NLOS conditions across a wide range of synthetic
+environments, with a real-world cross-domain test on the
+\textsc{OU best} trace as the killer-condition gate.
+\end{abstract}
+
+% =============================================================================
+\section{Introduction}
+\label{sec:intro}
+
+% TODO: insert the introduction prose. Key points:
+%   - UWB promises cm-level localization but suffers from NLOS
+%   - prior work focuses on GCN/transformer for per-trace NLOS ID
+%   - but: a model trained in one env doesn't generalize
+%   - the right framing is "physical-layer OOD generalization",
+%     a specific instance of domain generalization where the shift
+%     is induced by the radio propagation environment
+%   - we propose a 4-tier architecture: SSL + MAML + FiLM + heads
+
+% =============================================================================
+\section{Related Work}
+\label{sec:related}
+
+% TODO: insert the related-work paragraph positioning UltraClear in the
+% taxonomy of:
+%   - generic domain adaptation (DANN, CORAL, ...)
+%   - domain generalization (MAML, IRM, ...)
+%   - physical-layer OOD (rare, mostly confined to ISAC/6G papers)
+%   - few-shot adaptation
+% And the 5 baselines from cmt.txt:
+%   - HSML (IoT J 2025), F-BERT (TIM 2025),
+%     ADCNN-BiLSTM-Transformer (2025),
+%     Transformer-WLS (LNCS 2025), RefLoc (ACM TOSN 2024)
+% Plus the SSL-on-UWB references: Bregar Sensors J 2023,
+% Coppens TMLCN 2024.
+
+% =============================================================================
+\section{Problem Formulation}
+\label{sec:problem}
+
+We consider a UWB localization system with $M$ fixed anchors and one
+mobile tag. At each timestep $t$, the tag receives from each anchor
+$m \in \{1,\dots,M\}$ a measurement vector
+$\bm{x}_t^m \in \R^{F}$, where $F = 1$ for Time-of-Arrival (ToA)
+only and $F = 2$ for ToA + Angle-of-Arrival (AoA). We stack
+measurements into a tensor
+$\bm{X} \in \R^{T \times M \times F}$ over a sliding window of
+length $T$.
+
+An \emph{environment} (or \emph{macro domain}) is a deployment
+scenario characterized by its anchor layout, room geometry, and
+material properties. A \emph{condition} (or \emph{micro domain}) is
+a propagation state within an environment --- e.g., the level of
+blockage, multipath severity, or shadowing.
+
+A \emph{task} is a pair (environment, condition). The training
+dataset $\mathcal{D}_{\mathrm{train}} = \{ (\bm{X}_i, \bm{y}_i, e_i, c_i) \}$
+contains $N_{\mathrm{envs}}$ environments and $N_{\mathrm{conds}}$
+conditions per environment. The label $\bm{y}_i \in \R^2$ is the
+tag's 2D position at the window's middle timestep.
+
+The goal of \emph{physical-layer OOD generalization} is to learn a
+model that, given $K$ labeled shots from a \emph{previously unseen}
+environment $e_{\mathrm{new}}$, produces low-error localization on
+the \emph{unseen} environment with no further gradient updates at
+test time. The unseen environment may also exhibit unseen
+micro-conditions; the model is expected to \emph{compose} the
+macro-environment prior (learned from $K$ shots) with the
+micro-condition representation (learned from cross-environment
+exposure) to produce a coherent prediction.
+
+% =============================================================================
+\section{The UltraClear 4-Tier Architecture}
+\label{sec:arch}
+
+\begin{figure}[t]
+  \centering
+  \input{figures/architecture.tex}
+  \caption{Overview of the four-tier UltraClear architecture.
+  Tier 0: self-supervised masked prediction on unlabeled UWB
+  streams pretrains the ASTA encoder.
+  Tier 1: first-order MAML (FOMAML) over deployment environments
+  refines the encoder into an environment-invariant initialization.
+  Tier 2: a FiLM-conditioned micro encoder is disentangled from
+  macro-environment information via a gradient-reversal adversary.
+  Tier 3: the downstream heads (NLOS ID, signal restoration, location)
+  operate on the disentangled features.}
+  \label{fig:arch}
+\end{figure}
+
+The architecture is summarized in Figure~\ref{fig:arch}. We treat
+the four tiers as \emph{sequential refinements} of the same ASTA
+encoder, with each tier consuming the encoder from the previous one.
+
+\paragraph{Notation.}
+We use the following shorthand throughout:
+\begin{itemize}
+  \item $\bm{X} \in \R^{T \times M \times F}$ --- raw input window.
+  \item $\bm{H} \in \R^{T \times M \times d}$ --- encoder output
+    features, with $d$ the model width.
+  \item $\bm{c} \in \R^{d_c}$ --- micro-condition vector, with
+    $d_c$ the condition dimension.
+  \item $\bm{H}' \in \R^{T \times M \times d}$ --- FiLM-modulated
+    features.
+  \item $\theta$ --- encoder parameters (the primary object of
+    meta-learning in Tier 1).
+  \item $\phi$ --- micro-encoder parameters.
+  \item $\psi$ --- adversary parameters.
+\end{itemize}
+
+% =============================================================================
+\input{sections/tier0}
+% \input{sections/tier1}
+% \input{sections/tier2}
+% \input{sections/tier3}
+
+% =============================================================================
+\section{Three-Tier Evaluation Protocol}
+\label{sec:eval}
+
+We evaluate under a three-tier protocol that mirrors the actual
+physics of environment variation:
+\begin{enumerate}
+  \item \textbf{Seen-macro / unseen-micro}: train on environments
+    $\{e_1,\dots,e_K\}$; at test time, evaluate on those same
+    environments but with a held-out micro-condition (e.g.,
+    heavy blockage never seen during training in those envs).
+    This tests \emph{condition composition}.
+  \item \textbf{Unseen-macro}: train on environments
+    $\{e_1,\dots,e_K\}$; at test time, evaluate on a held-out
+    environment $e_{K+1}$ using only $K$ labeled shots for
+    adaptation. This tests \emph{few-shot adaptation} to a new
+    topology.
+  \item \textbf{Unseen-device}: hold out a real-world trace (e.g.,
+    the OU best trace from a different physical hardware
+    platform). This is the killer-condition gate --- no synthetic
+    data can rescue a model that fails here.
+\end{enumerate}
+
+% =============================================================================
+\section{Discussion}
+\label{sec:discussion}
+
+% TODO: discussion of the disentanglement vs. composition tradeoff,
+% the OOD gap expected from each tier, and the limits of synthetic
+% evaluation.
+
+% =============================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+% TODO: short conclusion.
+
+% =============================================================================
+\bibliographystyle{ieeetr}
+\bibliography{references}
+
+\end{document}

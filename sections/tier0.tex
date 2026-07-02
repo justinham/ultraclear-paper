@@ -1,0 +1,140 @@
+% =============================================================================
+\section{Tier 0: Self-Supervised Pretraining via Masked Prediction}
+\label{sec:tier0}
+% =============================================================================
+
+The encoder is the most parameter-heavy component of UltraClear, and
+its representational quality determines the ceiling for all
+downstream tiers. We pretrain the encoder with a self-supervised
+objective that requires \emph{no labels} and therefore scales with
+the cheapest available signal: raw UWB measurement streams.
+
+\subsection{Why SSL pretraining before MAML}
+\label{sec:tier0-why}
+
+A randomly initialized ASTA encoder has to learn two qualitatively
+different things during MAML:
+\begin{itemize}
+  \item \emph{Measurement structure} --- how ToA and AoA relate
+    across anchors, how a clean signal evolves over time, what
+    NLOS-induced bias looks like in the input space. This is
+    \emph{channel-agnostic} and does not depend on the deployment
+    environment.
+  \item \emph{Deployment structure} --- where the anchors are, how
+    big the room is, what the geometry of multipath looks like.
+    This is \emph{environment-specific} and is what the
+    MAML outer loop is designed to capture.
+\end{itemize}
+When both are learned simultaneously, the MAML outer loss
+(driven by deployment structure) under-supervises the
+measurement-structure features, leading to poor out-of-distribution
+generalization. We address this by \emph{decoupling} the two:
+SSL pretraining locks in measurement structure, and MAML
+subsequently refines the encoder for deployment structure.
+
+This separation also has a practical benefit: SSL pretraining can
+consume large pools of \emph{unlabeled} UWB data, which are far
+cheaper to collect than fully labeled traces.
+
+\subsection{Masked prediction}
+\label{sec:tier0-task}
+
+Given a batch of $B$ raw windows
+$\{\bm{X}^{(b)}\}_{b=1}^{B}$, we sample a binary mask
+$\bm{M} \in \{0,1\}^{B \times T \times M}$ with each entry drawn
+independently from $\mathrm{Bernoulli}(p)$, where $p$ is the
+\emph{mask ratio} (we use $p = 0.25$). The masked input
+$\tilde{\bm{X}}$ is constructed by zeroing out the masked cells:
+\begin{equation}
+  \tilde{\bm{X}}^{(b)}_{t,m,f}
+  = \begin{cases}
+    0 & \text{if } \bm{M}^{(b)}_{t,m} = 1 \\
+    \bm{X}^{(b)}_{t,m,f} & \text{otherwise.}
+  \end{cases}
+\end{equation}
+
+The encoder $f_\theta$ processes the masked input to produce
+features $\bm{H} = f_\theta(\tilde{\bm{X}})$, and a small
+prediction head $g_\eta : \R^d \to \R^F$ produces
+$\hat{\bm{X}} = g_\eta(\bm{H})$ at every (anchor, time) cell. The
+self-supervised loss is the mean-squared error on \emph{masked}
+cells only:
+\begin{equation}
+  \mathcal{L}_{\mathrm{ssl}}(\theta, \eta)
+  = \frac{1}{\sum_{b,t,m} \bm{M}^{(b)}_{t,m}}
+    \sum_{b,t,m,f} \bm{M}^{(b)}_{t,m}
+    \left( \hat{\bm{X}}^{(b)}_{t,m,f} - \bm{X}^{(b)}_{t,m,f} \right)^2.
+  \label{eq:ssl-loss}
+\end{equation}
+
+Intuitively, the model must learn to interpolate measurements from
+visible context. This is a strict superset of the requirements
+imposed by the downstream \emph{signal restoration} head
+(Section~\ref{sec:tier3}): any feature useful for predicting masked
+measurements is also useful for denoising.
+
+\subsection{Augmentations}
+\label{sec:tier0-aug}
+
+We apply a small set of augmentations to the input before masking,
+following the contrastive-learning literature~\cite{chen2020simclr}:
+\begin{itemize}
+  \item \emph{Time-warp}: randomly stretch or compress the time axis
+    by $\pm 10\%$.
+  \item \emph{Anchor-dropout}: zero out a random 10\% of anchors
+    entirely (simulates antenna failures).
+  \item \emph{Additive Gaussian noise}: $\sigma = 0.02$ in
+    measurement units.
+\end{itemize}
+Augmentations are not strictly necessary for masked prediction to
+work, but they sharpen the encoder by forcing it to be robust to
+real-world degradations.
+
+\subsection{Why not contrastive learning?}
+\label{sec:tier0-why-not-contrastive}
+
+The original architecture design included a contrastive auxiliary
+loss (NT-Xent~\cite{chen2020simclr}) alongside masked prediction.
+We removed it after observing that the two losses interfered
+during the early stages of training --- the encoder's embeddings
+were pulled in two directions, and the downstream location loss
+was noisier as a result. Masked prediction alone is sufficient
+because it provides a direct supervision signal in measurement
+space, which is the same space as the downstream restoration task.
+
+\subsection{Implementation details}
+\label{sec:tier0-impl}
+
+The encoder is the ASTA encoder described in
+Section~\ref{sec:asta-encoder} (to be added in a later revision).
+The prediction head $g_\eta$ is a 2-layer MLP with GELU
+activation, with hidden width 64. We train for 30 epochs with
+batch size 32, Adam optimizer with learning rate $10^{-3}$, and
+the mask ratio $p = 0.25$. The full pretraining run takes
+approximately 20 seconds on a single CPU for the synthetic
+dataset of 1{,}600 traces.
+
+\subsection{Ablations (planned)}
+\label{sec:tier0-ablations}
+
+For the camera-ready version, we plan to ablate:
+\begin{itemize}
+  \item Mask ratio $p \in \{0.15, 0.25, 0.40\}$.
+  \item Encoder depth (number of ASTA blocks $\in \{1, 2, 4\}$).
+  \item Augmentation set (none, light, full).
+  \item The effect of SSL pretraining on downstream Tier-3
+    performance: train Tier 3 from random init vs.\ from
+    SSL-pretrained init, holding all else fixed.
+\end{itemize}
+
+\subsection{Linear-probe sanity check}
+\label{sec:tier0-probe}
+
+The cleanest diagnostic for whether SSL pretraining transferred
+useful features is the \emph{linear-probe protocol}: freeze the
+encoder, train only a linear head on the location task, and
+measure the held-out location error. In our synthetic
+experiments, the SSL-pretrained encoder achieves
+$X\%$ lower location error than a randomly initialized one after
+the same number of linear-probe epochs. (Numerical values to be
+filled in once the full pipeline is run on the synthetic dataset.)
