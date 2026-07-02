@@ -22,4 +22,5 @@
 # Python (in case we add experiment scripts here)
 __pycache__/
 *.pyc
+*.pyo
 .ipynb_checkpoints/

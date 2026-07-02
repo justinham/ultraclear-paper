@@ -1,6 +1,6 @@
 # UltraClear Paper
 
-LaTeX source for the UltraClear paper:
+LaTeX source and reference implementation for the UltraClear paper:
 > **UltraClear: A 4-Tier Architecture for Physical-Layer OOD Generalization in UWB Localization**
 
 ## Repository layout
@@ -15,11 +15,15 @@ ultraclear-paper/
 │   └── tier3.tex         # Tier 3: Downstream heads (NLOS, restoration, location)
 ├── figures/
 │   └── architecture.tex  # TikZ architecture diagram (4-tier overview)
+├── code/                 # reference implementation (clean-room, self-contained)
+│   ├── ultraclear/       # the model package
+│   ├── scripts/train.py  # end-to-end training entry point
+│   └── README.md         # how to run the code
 ├── references.bib        # BibTeX references
 └── README.md             # this file
 ```
 
-## How to build locally
+## How to build the paper
 
 ```bash
 pdflatex main.tex
@@ -27,6 +31,16 @@ bibtex main
 pdflatex main.tex
 pdflatex main.tex
 ```
+
+## How to run the code
+
+```bash
+cd code
+python3.11 -m scripts.train --quick      # 5-second smoke test
+python3.11 -m scripts.train              # full run
+```
+
+See [`code/README.md`](code/README.md) for details.
 
 ## How to sync with Overleaf
 
@@ -39,6 +53,7 @@ pdflatex main.tex
 
 ## Status
 
+### Paper
 - [x] Title, abstract, introduction
 - [x] Related work (4 paragraphs: DA/DG, UWB NLOS, SSL-on-UWB, conditional modulation)
 - [x] Problem formulation
@@ -52,8 +67,11 @@ pdflatex main.tex
 - [ ] Experiments section: placeholder (camera-ready)
 - [ ] Numerical results: pending full-pipeline runs
 
-## Companion code
-
-The architecture is implemented in
-[`justinham/ultraclear_v2`](https://github.com/justinham/ultraclear_v2) (or
-local path `~/.openclaw/workspace/ultraclear_v2/`).
+### Code
+- [x] Synthetic UWB-like data with env/cond metadata
+- [x] ASTA encoder (CTC + D-GCN + MHSA)
+- [x] Tier 0: SSL pretraining (full training loop)
+- [x] Tier 1: FOMAML (hand-rolled, no `learn2learn` dep)
+- [x] Tier 2: disentangled model wires up (smoke test)
+- [x] Tier 3: downstream heads (full training loop)
+- [ ] Tier 2: full adversarial training loop

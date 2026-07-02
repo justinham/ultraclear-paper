@@ -1,0 +1,145 @@
+"""Synthetic UWB-like data for the 4-tier pipeline.
+
+Each *environment* is a macro domain (e.g. "office", "garage") with:
+  - a random anchor layout in 2D
+  - a random tag-trajectory generator (a slow random walk)
+
+Each *trace* within an environment is one tag path; we sample distances
+from each anchor to each tag position, then add measurement noise whose
+*intensity* depends on a *micro condition* (NLOS / multipath severity).
+
+Output per sample: a tensor of shape (T, M, F) where
+  T  = sequence length (time steps)
+  M  = number of anchors
+  F  = number of channels (1 for ToA only, 2 for ToA + AoA)
+The y label is the 2D (x, y) tag position at the *center* timestep.
+We also expose env_id (macro) and condition_id (micro) for meta-learning.
+"""
+from __future__ import annotations
+from dataclasses import dataclass
+from typing import List, Tuple
+import math
+import numpy as np
+import torch
+from torch.utils.data import Dataset
+
+from .config import Config
+
+
+@dataclass
+class SyntheticEnv:
+    env_id: int
+    anchor_xy: np.ndarray          # (M, 2)
+    tag_init: np.ndarray           # (2,)
+    walk_scale: float              # how fast the tag moves per step
+    nlos_bias: np.ndarray          # (M,) per-anchor positive bias under NLOS
+
+
+def _make_random_env(rng: np.random.Generator, env_id: int, M: int) -> SyntheticEnv:
+    # Anchors at the corners of a random axis-aligned rectangle in [-5, 5]^2
+    xs = rng.uniform(-5.0, 5.0, size=M)
+    ys = rng.uniform(-5.0, 5.0, size=M)
+    anchor_xy = np.stack([xs, ys], axis=1).astype(np.float32)
+    tag_init = rng.uniform(-3.0, 3.0, size=2).astype(np.float32)
+    walk_scale = float(rng.uniform(0.1, 0.4))
+    nlos_bias = rng.uniform(0.2, 1.5, size=M).astype(np.float32)
+    return SyntheticEnv(env_id, anchor_xy, tag_init, walk_scale, nlos_bias)
+
+
+def _micro_params(condition_id: int) -> Tuple[float, float, float]:
+    """Return (nlos_rate, nlos_strength, multipath_std) for a micro condition."""
+    table = {
+        0: (0.05, 0.5, 0.02),  # mostly LOS
+        1: (0.30, 1.0, 0.05),  # moderate
+        2: (0.60, 1.5, 0.10),  # heavy
+    }
+    return table[condition_id % 3]
+
+
+def simulate_trace(
+    env: SyntheticEnv,
+    condition_id: int,
+    T: int,
+    rng: np.random.Generator,
+    n_channels: int,
+) -> Tuple[np.ndarray, np.ndarray, int, int]:
+    """Return (X[T,M,F], y[2], env_id, condition_id)."""
+    M = env.anchor_xy.shape[0]
+    nlos_rate, nlos_strength, mp_std = _micro_params(condition_id)
+
+    # random walk
+    pos = np.zeros((T, 2), dtype=np.float32)
+    pos[0] = env.tag_init + rng.normal(0, env.walk_scale, size=2).astype(np.float32)
+    for t in range(1, T):
+        pos[t] = pos[t - 1] + rng.normal(0, env.walk_scale, size=2).astype(np.float32)
+
+    # distances
+    diff = pos[:, None, :] - env.anchor_xy[None, :, :]   # (T, M, 2)
+    dist = np.linalg.norm(diff, axis=-1)                 # (T, M)
+
+    # NLOS events: per-anchor, per-timestep bernoulli
+    nlos = rng.random(size=(T, M)) < nlos_rate
+    bias = nlos.astype(np.float32) * (env.nlos_bias[None, :] * nlos_strength)
+
+    noise = rng.normal(0.0, mp_std, size=(T, M)).astype(np.float32) + bias
+    toa = dist + noise
+
+    if n_channels >= 2:
+        # simple AoA: angle from anchor to tag, with noise
+        ang = np.arctan2(diff[..., 1], diff[..., 0])     # (T, M)
+        ang_noise = rng.normal(0.0, 0.05, size=(T, M)).astype(np.float32)
+        aoa = ang + ang_noise
+        X = np.stack([toa, aoa], axis=-1)
+    else:
+        X = toa[..., None]
+
+    # label = position at the middle timestep
+    y = pos[T // 2]
+    return X.astype(np.float32), y.astype(np.float32), env.env_id, condition_id
+
+
+def build_synthetic_dataset(
+    cfg: Config, seed: int = 0
+) -> List[Tuple[np.ndarray, np.ndarray, int, int]]:
+    """Build a flat list of (X, y, env_id, cond_id) over all envs × traces × conds."""
+    rng = np.random.default_rng(seed)
+    envs: List[SyntheticEnv] = [
+        _make_random_env(rng, i, cfg.n_anchors) for i in range(cfg.n_synthetic_envs)
+    ]
+    data: List[Tuple[np.ndarray, np.ndarray, int, int]] = []
+    for env in envs:
+        for _ in range(cfg.samples_per_env):
+            cond = int(rng.integers(0, cfg.n_micro_conditions))
+            X, y, eid, cid = simulate_trace(
+                env, cond, cfg.seq_len, rng, cfg.n_channels
+            )
+            data.append((X, y, eid, cid))
+    return data
+
+
+class TensorUWB(Dataset):
+    """Wrap a list of (X, y, env_id, cond_id) as tensors for DataLoader use."""
+
+    def __init__(self, items: List[Tuple[np.ndarray, np.ndarray, int, int]]):
+        self.X = torch.from_numpy(np.stack([x for x, _, _, _ in items])).float()
+        self.y = torch.from_numpy(np.stack([y for _, y, _, _ in items])).float()
+        self.env = torch.tensor([e for _, _, e, _ in items], dtype=torch.long)
+        self.cond = torch.tensor([c for _, _, _, c in items], dtype=torch.long)
+
+    def __len__(self) -> int:
+        return self.X.shape[0]
+
+    def __getitem__(self, i: int):
+        return self.X[i], self.y[i], self.env[i], self.cond[i]
+
+
+def make_synthetic(cfg: Config, seed: int = 0) -> Tuple[List, List]:
+    """Split 80/20 by *environment* (so val sees unseen envs) for the standard
+    supervised baseline path. Tier 1 (MAML) handles its own env-aware split."""
+    items = build_synthetic_dataset(cfg, seed=seed)
+    env_ids = sorted({it[2] for it in items})
+    n_train_envs = max(1, int(0.8 * len(env_ids)))
+    train_envs = set(env_ids[:n_train_envs])
+    train = [it for it in items if it[2] in train_envs]
+    val = [it for it in items if it[2] not in train_envs]
+    return train, val
