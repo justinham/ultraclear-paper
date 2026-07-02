@@ -92,26 +92,81 @@ environments, with a real-world cross-domain test on the
 \section{Introduction}
 \label{sec:intro}
 
-% TODO: insert the introduction prose. Key points:
-%   - UWB promises cm-level localization but suffers from NLOS
-%   - prior work focuses on GCN/transformer for per-trace NLOS ID
-%   - but: a model trained in one env doesn't generalize
-%   - the right framing is "physical-layer OOD generalization",
-%     a specific instance of domain generalization where the shift
-%     is induced by the radio propagation environment
-%   - we propose a 4-tier architecture: SSL + MAML + FiLM + heads
+Ultra-wideband (UWB) radio promises centimeter-level indoor
+localization, but its accuracy in practice is dominated by
+non-line-of-sight (NLOS) conditions, multipath, and blockage.
+A growing line of work addresses this with deep learning:
+graph and transformer models that take raw ToA/AoA streams and
+jointly identify NLOS measurements, restore corrupted signals, and
+regress the tag's position~\cite{hsml2025, fbert2025, refloc2024,
+transformerwls2025, adcnnbilstm2025}. These models are highly
+accurate \emph{within the deployment environment they were trained
+on}, but degrade sharply when the anchor layout, room geometry,
+or propagation conditions differ at test time. From a
+machine-learning perspective, this is a domain-generalization
+problem; from a wireless perspective, it is a
+\emph{physical-layer} OOD problem in which the distribution
+shift is induced by the radio propagation environment.
+
+We position UltraClear within the specific subfield of
+\emph{physical-layer out-of-distribution (OOD) generalization}:
+a target setting in which (i) labeled traces in the target
+environment are scarce or unavailable, (ii) test-time
+fine-tuning is infeasible (the tag must localize immediately),
+and (iii) the distribution shift is structured by the
+propagation physics. To our knowledge, no prior work
+explicitly carves the problem this way for UWB.
+
+We propose a four-tier hierarchical architecture that addresses
+this setting. \textbf{Tier 0} is a self-supervised masked-prediction
+pretraining stage that learns measurement-structure features
+from abundant unlabeled UWB streams. \textbf{Tier 1} is a
+first-order MAML (FOMAML) outer loop that learns an
+environment-invariant initialization by treating each
+deployment environment as a meta-task. \textbf{Tier 2}
+introduces a disentangled micro-condition representation via
+FiLM coupled with a gradient-reversal adversary, enabling
+macro/micro composition at test time. \textbf{Tier 3} stacks
+the downstream heads (NLOS ID, signal restoration, location)
+on top of the disentangled features.
 
 % =============================================================================
 \section{Related Work}
 \label{sec:related}
 
-% TODO: insert the related-work paragraph positioning UltraClear in the
-% taxonomy of:
-%   - generic domain adaptation (DANN, CORAL, ...)
-%   - domain generalization (MAML, IRM, ...)
-%   - physical-layer OOD (rare, mostly confined to ISAC/6G papers)
-%   - few-shot adaptation
-% And the 5 baselines from cmt.txt:
+\textbf{Generic domain adaptation and generalization.}
+Domain-adversarial networks~\cite{dann2016} learn
+domain-invariant features via a gradient-reversal adversary;
+MAML~\cite{maml2017} learns an initialization for fast
+adaptation. UltraClear adapts both ideas to the
+physical-layer OOD setting, where the domain shift is
+structured by the propagation environment.
+
+\textbf{UWB NLOS identification and mitigation.}
+Prior work has focused on per-trace NLOS identification,
+either as classification~\cite{bregar2023, fbert2025,
+adcnnbilstm2025, hsml2025} or as joint ranging-error
+correction~\cite{transformerwls2025, refloc2024}. These
+methods assume in-distribution deployment and do not address
+the cross-environment generalization gap that UltraClear
+targets. The closest meta-learning baseline is
+\cite{hsml2025}, which uses MAML on labeled CIR data but
+does not incorporate self-supervised pretraining or
+micro-condition disentanglement.
+
+\textbf{Self-supervised learning on UWB.}
+A handful of recent works have explored self-supervised
+pretraining for UWB ranging-error correction~\cite{bregar2023,
+coppens2024}. We use the simpler masked-prediction objective
+in Tier~0 and pair it with downstream meta-learning, which
+(to our knowledge) has not been explored.
+
+\textbf{Conditional feature modulation.}
+FiLM~\cite{film2018} and AdaIN~\cite{adain2017} are
+well-established primitives for conditional computation.
+UltraClear uses FiLM in Tier~2 to compose macro and
+micro representations, enabled by the gradient-reversal
+adversarial disentanglement of~\cite{dann2016}.
 %   - HSML (IoT J 2025), F-BERT (TIM 2025),
 %     ADCNN-BiLSTM-Transformer (2025),
 %     Transformer-WLS (LNCS 2025), RefLoc (ACM TOSN 2024)
@@ -193,10 +248,50 @@ We use the following shorthand throughout:
 \end{itemize}
 
 % =============================================================================
+\subsection{The ASTA encoder}
+\label{sec:asta}
+
+All four tiers share a common \emph{ASTA encoder}
+$f_\theta : \R^{T \times M \times F} \to \R^{T \times M \times d}$
+that maps a raw measurement window to a per-cell feature tensor.
+The encoder is a stack of $B$ identical \emph{ASTA blocks}, each
+composed of three sequential operations: a \emph{causal temporal
+convolution} (CTC) that mixes each (anchor, channel) stream over
+time without access to future timesteps; a \emph{dynamic
+dual-edge graph convolution} (D-GCN) that mixes features across
+anchors with a learned per-channel adjacency; and a
+\emph{multi-head self-attention} (MHSA) over the flattened
+$T \times M$ tokens to capture long-range cross-anchor dependencies.
+A residual connection and LayerNorm follow each sub-layer.
+
+\paragraph{CTC.}
+For each (anchor, channel) pair, a 1D convolution of kernel width
+$k$ with left-only padding produces an output of length $T$ from
+an input of length $T$, guaranteeing causality.
+
+\paragraph{D-GCN.}
+The graph's node set is the $M$ anchors; the adjacency
+$\bm{A}^{(c)} \in \R^{M \times M}$ is learned \emph{per channel}
+$c \in \{1,\dots,F\}$ and combined with a self-loop of weight
+$\lambda$ (set to $0.5$ throughout), then row-normalized. The
+channel-wise feature dim is reshaped to
+$\R^{F \times (d/F)}$, and message passing is a single
+einsum-based aggregation followed by a linear projection
+$\bm{H}_{\mathrm{gcn}} = \bm{W}^{(c)} ( \bm{A}^{(c)} \bm{H} )$.
+
+\paragraph{MHSA.}
+Standard multi-head self-attention over the flattened
+$T \times M$ tokens, with $h$ heads and model width $d$
+decomposed as $d = h d_h$.
+
+% =============================================================================
 \input{sections/tier0}
-% \input{sections/tier1}
-% \input{sections/tier2}
-% \input{sections/tier3}
+% =============================================================================
+\input{sections/tier1}
+% =============================================================================
+\input{sections/tier2}
+% =============================================================================
+\input{sections/tier3}
 
 % =============================================================================
 \section{Three-Tier Evaluation Protocol}
@@ -222,18 +317,56 @@ physics of environment variation:
 \end{enumerate}
 
 % =============================================================================
+\section{Experiments (camera-ready)}
+\label{sec:experiments}
+
+Full ablation tables, baseline comparisons (HSML~\cite{hsml2025},
+F-BERT~\cite{fbert2025}, ADCNN-BiLSTM-Transformer~\cite{adcnnbilstm2025},
+Transformer-WLS~\cite{transformerwls2025},
+RefLoc~\cite{refloc2024}), and the three-tier evaluation
+results on the Sionna ray-tracing~\cite{sionna2022} dataset
+and the OU best real-world trace will be reported in the
+camera-ready version.
+
+% =============================================================================
 \section{Discussion}
 \label{sec:discussion}
 
-% TODO: discussion of the disentanglement vs. composition tradeoff,
-% the OOD gap expected from each tier, and the limits of synthetic
-% evaluation.
+\paragraph{Disentanglement vs. composition.}
+The FiLM modulation in Tier~2 is the architectural element that
+enables \emph{composition}: a new (macro, micro) combination at
+test time can be served by a macro initialization (learned from
+$K$ shots) and a micro condition (predicted from the input). The
+gradient-reversal adversary is the \emph{enforcement} mechanism
+that makes composition faithful --- without it, the FiLM
+modulation would be entangled with macro information and
+composition would silently fail.
+
+\paragraph{Limits of synthetic evaluation.}
+Sionna provides ground-truth positions, anchor layouts, and
+labeled NLOS conditions, but the realism of the simulated
+multipath and material properties is bounded by the underlying
+ray-tracing model. The unseen-device test on a real UWB trace
+is the ultimate gate; the unseen-macro and seen-macro /
+unseen-micro tests on synthetic data are necessary but not
+sufficient. The full ablation table is reported in
+Section~\ref{sec:experiments} of the camera-ready version.
 
 % =============================================================================
 \section{Conclusion}
 \label{sec:conclusion}
 
-% TODO: short conclusion.
+We presented \textsc{UltraClear}, a four-tier architecture for
+physical-layer OOD generalization in UWB localization. The
+architecture combines self-supervised pretraining, first-order
+MAML, FiLM-based disentanglement, and a multi-task head to
+address the specific instance of domain generalization in
+which the distribution shift is induced by the radio
+propagation environment. We argued that this framing carves a
+novel position for UWB localization in the broader literature
+on wireless OOD generalization, and we proposed a
+three-tier evaluation protocol that mirrors the actual physics
+of environment variation.
 
 % =============================================================================
 \bibliographystyle{ieeetr}

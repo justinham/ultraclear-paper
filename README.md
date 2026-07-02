@@ -7,12 +7,12 @@ LaTeX source for the UltraClear paper:
 
 ```
 ultraclear-paper/
-├── main.tex              # main file (preamble, abstract, intro, eval, refs)
+├── main.tex              # main file (preamble, abstract, intro, related work, eval, refs)
 ├── sections/             # one file per tier
-│   ├── tier0.tex         # Tier 0: SSL pretraining (fully written)
-│   ├── tier1.tex         # Tier 1: MAML (skeleton, to be written)
-│   ├── tier2.tex         # Tier 2: Micro disentanglement (skeleton)
-│   └── tier3.tex         # Tier 3: Downstream heads (skeleton)
+│   ├── tier0.tex         # Tier 0: SSL pretraining (masked prediction)
+│   ├── tier1.tex         # Tier 1: FOMAML over environments
+│   ├── tier2.tex         # Tier 2: Micro-condition disentanglement (FiLM + grad-reversal adv)
+│   └── tier3.tex         # Tier 3: Downstream heads (NLOS, restoration, location)
 ├── figures/
 │   └── architecture.tex  # TikZ architecture diagram (4-tier overview)
 ├── references.bib        # BibTeX references
@@ -39,12 +39,17 @@ pdflatex main.tex
 
 ## Status
 
-- [x] Title, abstract, intro/related-work/eval placeholders
-- [x] Tier 0: fully written
-- [ ] Tier 1: skeleton only — needs full prose, equations, ablations
-- [ ] Tier 2: skeleton only
-- [ ] Tier 3: skeleton only
-- [ ] Discussion, conclusion: skeletons
+- [x] Title, abstract, introduction
+- [x] Related work (4 paragraphs: DA/DG, UWB NLOS, SSL-on-UWB, conditional modulation)
+- [x] Problem formulation
+- [x] ASTA encoder subsection
+- [x] Tier 0: SSL pretraining
+- [x] Tier 1: FOMAML
+- [x] Tier 2: Micro-condition disentanglement
+- [x] Tier 3: Downstream heads
+- [x] Three-tier evaluation protocol
+- [x] Discussion and conclusion
+- [ ] Experiments section: placeholder (camera-ready)
 - [ ] Numerical results: pending full-pipeline runs
 
 ## Companion code

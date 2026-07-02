@@ -1,0 +1,52 @@
+% =============================================================================
+\subsection{Tier 1: Macro meta-learning}
+\label{sec:tier1}
+% =============================================================================
+
+Each deployment environment $e \in \mathcal{E}$ defines a
+\emph{meta-task}. For a given task, the inner-loop loss is the
+mean-squared error between the predicted and ground-truth 2D
+position at the window's middle timestep:
+\begin{equation}
+  \mathcal{L}_{\mathrm{task}}^{(e)}(\theta)
+  = \frac{1}{|\mathcal{S}_e|}
+    \sum_{(\bm{X}, \bm{y}) \in \mathcal{S}_e}
+    \left\| \ell_\theta(\bm{X}) - \bm{y} \right\|_2^2,
+  \label{eq:task}
+\end{equation}
+where $\ell_\theta = h \circ f_\theta$ is the composition of the
+encoder and a small location head (an attention-pooled MLP), and
+$\mathcal{S}_e$ is a $K$-shot support set sampled from
+environment $e$.
+
+\paragraph{FOMAML.}
+We adopt first-order MAML~\cite{maml2017}. The inner loop performs
+$I$ gradient steps with learning rate $\alpha$ on a task-specific
+copy of the parameters, starting from the shared initialization
+$\theta$:
+\begin{equation}
+  \theta_i' = \theta_{i-1}' - \alpha \nabla_{\theta}
+  \mathcal{L}_{\mathrm{task}}^{(e)}(\theta_{i-1}')
+  \quad (i = 1,\dots,I),
+  \label{eq:inner}
+\end{equation}
+where the gradient is detached from the computational graph
+(first-order approximation). The outer loop optimizes the
+initialization $\theta$ on the query loss
+$\mathcal{L}_{\mathrm{task}}^{(e)}(\theta_I')$ using Adam with
+learning rate $\beta$, summed over $N$ tasks sampled per episode:
+\begin{equation}
+  \theta \leftarrow \theta - \beta \nabla_\theta
+  \sum_{e \sim \mathcal{E}} \mathcal{L}_{\mathrm{task}}^{(e)}(\theta_I').
+  \label{eq:outer}
+\end{equation}
+The first-order approximation is critical for memory: with $B=2$
+ASTA blocks and $d=64$, the encoder has $\sim$76K parameters;
+a second-order MAML step would dominate GPU memory at scale.
+
+\paragraph{Hyperparameters.}
+We use $\alpha = 10^{-2}$, $I = 5$ inner steps, $\beta = 10^{-3}$,
+$N = 4$ tasks per episode, $K = 10$ shots per task, and 20 query
+samples per task, for 200 outer episodes. The encoder is
+initialized from the Tier-0 pretrained weights and then refined
+jointly by the MAML outer loop.

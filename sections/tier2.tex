@@ -1,0 +1,74 @@
+% =============================================================================
+\subsection{Tier 2: Micro-condition disentanglement}
+\label{sec:tier2}
+% =============================================================================
+
+The encoder $f_\theta$ produces a feature tensor
+$\bm{H} \in \R^{T \times M \times d}$ that is
+\emph{macro-aware} (it knows the deployment environment, thanks to
+Tier~1) but does not distinguish between, e.g., a heavily
+obstructed and a lightly obstructed realization of the same
+environment. Tier~2 introduces a \emph{disentangled micro-condition}
+representation $\bm{c} \in \R^{d_c}$ that captures only the
+intra-environment propagation state.
+
+\paragraph{Micro-encoder.}
+$h_\phi$ attention-pools $\bm{H}$ over the $(T, M)$ grid to a
+single vector, then projects through a 2-layer MLP to produce
+$\bm{c} = h_\phi(\bm{H})$.
+
+\paragraph{FiLM modulation.}
+We modulate the encoder features by $\bm{c}$ using
+\emph{Feature-wise Linear Modulation}~\cite{film2018}
+(FiLM). Two linear heads produce channel-wise scale and shift
+parameters:
+\begin{align}
+  \bm{\gamma}(\bm{c}) &= \bm{1} + \bm{W}_\gamma \bm{c} + \bm{b}_\gamma,
+  \label{eq:gamma}\\
+  \bm{\beta}(\bm{c}) &= \bm{W}_\beta \bm{c} + \bm{b}_\beta,
+  \label{eq:beta}
+\end{align}
+with $\bm{W}_{\gamma, \beta}$ initialized to zero and
+$\bm{b}_\gamma = \bm{1}$, $\bm{b}_\beta = \bm{0}$ so that the
+modulation is the identity at the start of training. The
+modulated features are
+\begin{equation}
+  \bm{H}'_{t,m,c} = \bm{\gamma}(\bm{c}) \odot \bm{H}_{t,m,:} + \bm{\beta}(\bm{c}),
+  \label{eq:film}
+\end{equation}
+with the scale and shift broadcast over $(t, m)$. FiLM has two
+advantages over concatenation: (i) every channel is modulated
+simultaneously, and (ii) once the macro / micro representations
+are disentangled, they can be \emph{composed} at test time --- a
+critical property for OOD generalization to unseen (macro, micro)
+combinations.
+
+\paragraph{Adversarial disentanglement.}
+We force $\bm{c}$ to be free of macro-environment information
+using a gradient-reversal adversary~\cite{dann2016} $D_\psi$ that
+attempts to predict the environment label $e$ from $\bm{c}$:
+\begin{equation}
+  \mathcal{L}_{\mathrm{adv}}(\phi, \psi)
+  = \E_{(\bm{X}, e)} \left[
+    \mathrm{CE}(D_\psi(\mathrm{GR}_\lambda(\bm{c})), e)
+  \right],
+  \label{eq:adv}
+\end{equation}
+where $\mathrm{GR}_\lambda$ is the gradient-reversal layer
+(identity in the forward pass, multiplication by $-\lambda$ in
+the backward pass) and $\mathrm{CE}$ is cross-entropy. The total
+Tier-2 loss is
+\begin{equation}
+  \mathcal{L}_{\mathrm{tier2}} =
+  \mathcal{L}_{\mathrm{task}} - \lambda \, \mathcal{L}_{\mathrm{adv}},
+  \label{eq:tier2}
+\end{equation}
+which is a saddle-point problem: $h_\phi$ minimizes the task loss
+while \emph{maximizing} the adversary's loss, and $D_\psi$
+minimizes it. At equilibrium, $\bm{c}$ is informative about the
+micro condition and uninformative about the macro environment.
+
+We set $\lambda = 1.0$ and $d_c = 32$ throughout. The
+disentanglement can be diagnosed by training a linear classifier
+on $\bm{c}$ to predict $e$ and reporting its accuracy --- at
+convergence this should be near chance.

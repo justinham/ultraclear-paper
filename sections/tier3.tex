@@ -1,0 +1,66 @@
+% =============================================================================
+\subsection{Tier 3: Downstream heads}
+\label{sec:tier3}
+% =============================================================================
+
+Three task heads share the disentangled features $\bm{H}'$
+produced by Tier~2. All three are 2-layer MLPs with GELU
+activation; their inputs differ only in the pooling strategy.
+
+\paragraph{NLOS identification.}
+The NLOS head produces a per-(anchor, time) logit
+$z_{t,m} = w_n^\top \bm{H}'_{t,m,:} + b_n$ trained with binary
+cross-entropy against a per-anchor NLOS label. Let
+$\bm{N} \in \{0,1\}^{T \times M}$ denote the ground-truth NLOS
+mask. The loss is
+\begin{equation}
+  \mathcal{L}_{\mathrm{nlos}} = -\frac{1}{TM}
+  \sum_{t,m} \left[
+    \bm{N}_{t,m} \log \sigma(z_{t,m})
+    + (1 - \bm{N}_{t,m}) \log(1 - \sigma(z_{t,m}))
+  \right].
+  \label{eq:nlos}
+\end{equation}
+
+\paragraph{Signal restoration.}
+The restoration head predicts a denoised measurement
+$\hat{\bm{X}}_{t,m,:} = g_r(\bm{H}'_{t,m,:})$ at every
+(anchor, time) cell, trained with MSE against the ground-truth
+\emph{clean} measurement (in our synthetic data, the true
+distance / angle without noise and NLOS bias):
+\begin{equation}
+  \mathcal{L}_{\mathrm{rest}} = \frac{1}{TMF}
+  \sum_{t,m,f} (\hat{\bm{X}}_{t,m,f} - \bm{X}^{\star}_{t,m,f})^2.
+  \label{eq:rest}
+\end{equation}
+
+\paragraph{Localization.}
+The location head \emph{sits on top of} the restoration head,
+not on top of the raw features. It pools the restored
+measurements at the window's middle timestep and regresses the
+2D position:
+\begin{equation}
+  \hat{\bm{y}} = h_\ell\bigl( \hat{\bm{X}}_{T/2, :,:} \bigr),
+  \qquad
+  \mathcal{L}_{\mathrm{loc}} = \left\| \hat{\bm{y}} - \bm{y} \right\|_2^2.
+  \label{eq:loc}
+\end{equation}
+This hierarchical design provides an implicit \emph{geometric
+regularization}: the restoration head is forced to produce
+measurements that are not only close to ground-truth LOS values
+but also geometrically consistent with the predicted location ---
+a constraint that pure denoising would not enforce.
+
+\paragraph{Multi-task loss.}
+The total Tier-3 loss is a weighted sum:
+\begin{equation}
+  \mathcal{L}_{\mathrm{tier3}} =
+  \mathcal{L}_{\mathrm{loc}} + \alpha_r \mathcal{L}_{\mathrm{rest}}
+  + \alpha_n \mathcal{L}_{\mathrm{nlos}},
+  \label{eq:multi}
+\end{equation}
+with $\alpha_r = 0.1$ and $\alpha_n = 0.1$ chosen so that the
+auxiliary heads regularize without dominating the gradient. All
+three heads are trained jointly; gradients flow through the
+encoder, so the encoder is further refined for the location
+objective.
