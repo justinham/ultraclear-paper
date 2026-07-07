@@ -51,6 +51,14 @@ class Config:
     finetune_lr: float = 1e-3
     finetune_batch_size: int = 16
 
+    # Per-channel loss weights for SSL (used by ssl_loss for F>=2).
+    # Default is 1.0 for all channels (current F=1 behavior, also
+    # 50/50 split for F=2 with z-score normalization). For F=2 the
+    # paper uses [3.0, 1.0] to upweight ToA over AoA, since ToA is
+    # the geometrically meaningful channel and is the one that flows
+    # into the downstream location head. Override per-run via CLI.
+    channel_weights: Tuple[float, ...] = (1.0, 1.0)
+
     # synthetic data
     n_synthetic_envs: int = 8     # how many macro environments to simulate
     samples_per_env: int = 200    # traces per environment

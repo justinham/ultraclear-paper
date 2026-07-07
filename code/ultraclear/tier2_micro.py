@@ -101,6 +101,24 @@ class Adversary(nn.Module):
 class DisentangledModel(nn.Module):
     """Wraps the ASTA encoder, the micro encoder, the FiLM, and the adversary
     so we can train them with a single forward pass.
+
+    The gradient-reversal (GR) layer lives *inside* the adversary path:
+    forward = identity, backward = -lambda. So when the featurizer is
+    optimized on a loss that *includes* adv_ce (i.e. `L = task + adv_ce`),
+    the gradient that flows back into c from the adversary branch is
+    REVERSED — pushing c AWAY from being predictive of env. The
+    adversary's own weights, by contrast, see the *un-reversed* gradient
+    and step in the normal minimizing direction.
+
+    This is the standard DANN pattern. Use this with a single optimizer
+    over all parameters and a loss of the form
+        L = task_loss + lambda * CE(D(GR(c)), env)
+    where the `+` sign is correct (NOT `-`) because the GR sign flip
+    happens inside the model.
+
+    For the two-optimizer pattern, pass `detach_c_for_adv=True` in the
+    adversary-only forward pass to stop gradients from flowing into the
+    encoder / h_phi / FiLM.
     """
 
     def __init__(self, cfg: Config, n_envs: int):
@@ -111,12 +129,18 @@ class DisentangledModel(nn.Module):
         self.film = FiLM(cfg)
         self.adv = Adversary(cfg, n_envs)
 
-    def forward(self, x: torch.Tensor):
-        """Returns (h_prime, c, adv_logits)."""
+    def forward(self, x: torch.Tensor, detach_c_for_adv: bool = False):
+        """Returns (h_prime, c, adv_logits).
+
+        detach_c_for_adv: if True, c is detached before going into the
+        adversary. Backward from the adversary branch will then only
+        update D's own weights, not the encoder / h_phi / FiLM.
+        """
         h = self.encoder(x)                       # (B, T, M, d)
         c = self.h_phi(h)                         # (B, micro_dim)
         h_prime = self.film(h, c)                 # (B, T, M, d)
-        c_rev = _grad_reverse(c, lambd=self.cfg.adv_lambda)
+        c_for_adv = c.detach() if detach_c_for_adv else c
+        c_rev = _grad_reverse(c_for_adv, lambd=self.cfg.adv_lambda)
         adv_logits = self.adv(c_rev)              # (B, n_envs)
         return h_prime, c, adv_logits
 
@@ -128,7 +152,15 @@ def disentangle_loss(
     task_loss: torch.Tensor,
     lambda_adv: float = 1.0,
 ) -> torch.Tensor:
-    """Total loss = task_loss - lambda_adv * adv_ce
-    (the minus sign comes from the gradient reversal in forward)."""
+    """Total loss = task_loss + lambda_adv * adv_ce.
+
+    The `+` sign is correct (NOT `-`) because the gradient-reversal
+    layer inside `DisentangledModel.forward` flips the sign of the
+    adversary's gradient w.r.t. c during the backward pass. So the
+    featurizer (encoder / h_phi / FiLM) sees a gradient that pushes c
+    AWAY from being predictive of env (DANN disentanglement pressure).
+    The adversary's own weights, by contrast, see the un-reversed
+    gradient and step in the normal minimizing direction.
+    """
     adv_ce = TF.cross_entropy(adv_logits, env_ids)
-    return task_loss - lambda_adv * adv_ce
+    return task_loss + lambda_adv * adv_ce

@@ -3,6 +3,23 @@
 \label{sec:tier0}
 % =============================================================================
 
+\begin{figure}[t]
+  \centering
+  \input{figures/tier0_pipeline}
+  \caption{Tier 0 self-supervised pretraining. A raw UWB window
+  $\bm{X} \in \R^{T \times M \times F}$ is corrupted by a Bernoulli
+  mask $\bm{M}$ (joint across channels) to produce the masked
+  input $\tilde{\bm{X}}$. The ASTA encoder $f_\theta$ produces
+  per-cell features $\bm{H}$, and a 2-layer SSL head $g$ predicts
+  $\hat{\bm{X}}$ at every cell. The loss is the masked-MSE between
+  $\hat{\bm{X}}$ and the original $\bm{X}$ on the masked cells only;
+  for $F=2$ we weight the per-channel terms ($w_{\mathrm{ToA}}{=}3$,
+  $w_{\mathrm{AoA}}{=}1$) so the geometrically meaningful ToA channel
+  dominates the gradient. The pretrained encoder $f_{\theta^*}$ is
+  the artifact passed to Tier 1 (FOMAML) and Tier 3 (downstream heads).}
+  \label{fig:tier0}
+\end{figure}
+
 We pretrain the ASTA encoder with a self-supervised objective
 that requires no labels. The motivation is twofold: (i) unlabeled
 UWB streams are far cheaper to collect than labeled traces, and

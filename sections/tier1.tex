@@ -50,3 +50,247 @@ $N = 4$ tasks per episode, $K = 10$ shots per task, and 20 query
 samples per task, for 200 outer episodes. The encoder is
 initialized from the Tier-0 pretrained weights and then refined
 jointly by the MAML outer loop.
+
+\paragraph{Few-shot adaptation to held-out scenes.}
+We evaluate the contribution of the Tier-0 pretraining by
+comparing two FOMAML runs on a six-scene Sionna ray-tracing
+benchmark, both trained for 100 outer episodes over the same
+four training scenes (\texttt{empty\_open},
+\texttt{custom\_room\_large},
+\texttt{outdoor\_blockages\_pillars},
+\texttt{indoor\_blockages\_pillars}):
+\begin{enumerate}
+  \item \emph{Random init}: the encoder is initialized from the
+    default PyTorch distribution, with no upstream signal.
+  \item \emph{Tier-0 pretrained}: the encoder is initialized from
+    a Tier-0 SSL checkpoint trained on a single
+    \emph{out-of-distribution} scene (\texttt{empty\_open}, $F=2$
+    ToA+AoA, mask ratio 0.25, 100 epochs, channel weights
+    $w_{\mathrm{ToA}}{=}3$, $w_{\mathrm{AoA}}{=}1$).
+\end{enumerate}
+After 100 FOMAML episodes we freeze the initialization and
+measure query MSE on two held-out scenes
+(\texttt{outdoor\_parking\_01},
+\texttt{indoor\_garage\_parking\_01}) as a function of the
+support set size $K \in \{1, 2, 5, 10, 20\}$. For each $K$, we
+average over 30 independent support/query draws. The
+Tier-0-pretrained encoder outperforms the random baseline at
+every $K$:
+\begin{table}[h]
+  \centering
+  \small
+  \begin{tabular}{r r r r}
+    \toprule
+    $K$ (shots) & Random init (MSE) & Tier-0 pretrained (MSE) & Reduction \\
+    \midrule
+    1  & 691.2 &  \textbf{66.1} & \textbf{90.4\%} \\
+    2  &  70.7 &  \textbf{62.1} & 12.1\% \\
+    5  &  50.1 &  \textbf{39.9} & 20.3\% \\
+    10 &  36.4 &  \textbf{31.2} & 14.5\% \\
+    20 &  33.1 &  \textbf{28.3} & 14.7\% \\
+    \bottomrule
+  \end{tabular}
+  \caption{Few-shot query MSE on held-out scenes after 100
+  FOMAML episodes. Lower is better. The Tier-0 pretrained
+  encoder produces a 10$\times$ lower MSE at $K=1$ and a
+  consistent 12--20\% reduction at $K \ge 2$. MSE is in units of
+  m$^2$ (tag positions are 2D in meters).}
+  \label{tab:tier1-fewshot}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.85\linewidth]{figures/tier1_sionna/compare_tier1_few_shot.png}
+  \caption{Few-shot query MSE on two held-out Sionna scenes as a
+  function of the number of support shots $K$ per
+  environment. Filled markers show the mean across the two
+  held-out scenes, with bars for the standard error of the
+  mean; faint markers show the per-scene values. The
+  Tier-0-pretrained encoder (orange) outperforms the random
+  baseline (blue) at every $K$ and is roughly 10$\times$ better
+  at the most data-starved $K=1$ setting.}
+  \label{fig:tier1-fewshot}
+\end{figure}
+
+The 10$\times$ advantage at $K=1$ is the most practically
+relevant: it shows that the Tier-0 SSL features give the model
+a usable representation of a brand-new environment with a
+single labeled shot, where a randomly-initialized encoder has
+not yet learned any meaningful geometry. The 12--20\%
+advantage at $K \ge 2$ persists even as more shots are
+available, indicating that the SSL pretraining captures
+geometric structure (the cross-anchor and cross-trial
+correlations exploited by the ASTA encoder) that the
+random init cannot recover from in-domain data alone.
+
+\paragraph{Inner-loop adaptation dynamics.}
+To see \emph{where} the Tier-0 advantage comes from, we
+trace the query MSE at every inner-loop step
+($i = 0, 1, \dots, 5$) for the same two FOMAML runs. Step~$0$
+is the query MSE \emph{before} any inner-loop gradient is
+taken, i.e.\ it measures the quality of the FOMAML
+initialization in isolation. Figure~\ref{fig:tier1-adaptation}
+shows the median query MSE across the two held-out scenes
+($\times 20$ independent support/query draws per $K$ per
+scene), plotted on a log-$y$ axis.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.95\linewidth]{figures/tier1_sionna/tier1_adaptation_curves.png}
+  \caption{Inner-loop adaptation curves on the two held-out
+  scenes, for $K \in \{1, 5, 20\}$ support shots. Solid lines are
+  the median query MSE across 40 independent draws (2 scenes
+  $\times$ 20 trials); the half-IQR is shown as error bars. The
+  Tier-0-pretrained initialization (orange) starts \emph{lower}
+  at step~0 (the SSL features are a better starting point),
+  \emph{converges faster} (fewer inner steps to reach a given
+  loss), and is \emph{more stable} at $K{=}1$ where the random
+  baseline oscillates between 56 and 71.}
+  \label{fig:tier1-adaptation}
+\end{figure}
+
+The figure separates two distinct contributions of the
+Tier-0 pretraining. \emph{At step~0} (no adaptation yet), the
+Tier-0 initialization already produces a 4\% lower query MSE
+(54.1 vs 56.5 m$^2$), which is the direct contribution of the
+SSL features to the location head. \emph{Across the inner
+loop}, the Tier-0 curve drops more steeply at every $K$,
+reaching the random baseline's $K{=}20$ final loss
+(29.8\,m$^2$) at $K{=}5$, step~5 (35.0\,m$^2$, close), and
+breaking it at $K{=}20$ (25.3 vs 29.8\,m$^2$). At $K{=}1$ the
+random baseline actively \emph{diverges} during adaptation
+(step 3 jumps to 71\,m$^2$ as the model overfits the single
+support sample), while the Tier-0 curve stays nearly flat ---
+the pretrained encoder is a stable starting point even when
+the inner-loop signal-to-noise ratio is poor.
+
+\paragraph{Condition-stratified breakdown.}
+To understand \emph{where} the Tier-0 advantage comes from,
+we stratify the held-out windows by per-trial NLOS status
+(\texttt{cond=0} when all four anchors report LOS,
+\texttt{cond=1} when at least one anchor reports NLOS). On
+the two held-out parking scenes at $K{=}20$, the Tier-0
+initialization reduces the mean query MSE by 17\% on the
+LOS-only subset (from $\sim$31 to $\sim$26 m$^2$) --- the
+expected improvement. The NLOS subset is more nuanced:
+the random baseline is approximately stable across LOS
+and NLOS (mean $\sim$30 m$^2$), while the Tier-0 model
+\emph{diverges} on NLOS trials, sometimes by an order of
+magnitude. Figure~\ref{fig:tier1-nlos} shows the breakdown.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.85\linewidth]{figures/tier1_sionna/tier1_nlos_breakdown.png}
+  \caption{Per-NLOS-condition query MSE on the two held-out
+  parking scenes at $K{=}20$. The Tier-0 pretrained
+  initialization (orange) improves the LOS-only subset
+  (where the SSL features capture a clean geometric signal)
+  but actively \emph{diverges} on NLOS trials, where the
+  SSL features --- trained on a 100\%-LOS scene ---
+  appear to mislead the inner-loop adaptation. The random
+  baseline is approximately stable across conditions.
+  This suggests the Tier-0 pretraining distribution must
+  include at least some NLOS data for the architecture to
+  generalize across conditions, not just across
+  geometries.}
+  \label{fig:tier1-nlos}
+\end{figure}
+
+We read this as evidence that the Tier-0 SSL objective, as
+currently designed, encodes the \emph{geometry} of UWB
+propagation in LOS conditions but does not yet capture the
+\emph{physics} of NLOS. The pretrained encoder is an
+excellent starting point for clean-signal adaptation, but
+its learned features can be confidently wrong in the
+presence of multipath, which the inner loop then
+amplifies. We see two natural remedies for the camera-ready
+version: (i) train Tier-0 on a mix of LOS \emph{and} NLOS
+scenes (the existing \texttt{grid2/} dataset has both, and
+adding the heavy-NLOS scenes to the Tier-0 training mix is
+a one-line change), or (ii) add an explicit NLOS-aware
+auxiliary task to the SSL objective (e.g., predict
+per-anchor NLOS labels alongside the masked ToA).
+
+\paragraph{Spatial error pattern.}
+Where on the floor plan does each model fail? We adapt both
+models to $K{=}20$ shots from each held-out scene and
+evaluate query MSE on every window in that scene, then plot
+the per-position error on the $(x, y)$ floor map
+(Figure~\ref{fig:tier1-heatmap}). On
+\texttt{outdoor\_parking\_01} (env~4) the random
+initialization produces a uniformly high error across the
+lot (median MSE $\sim$30\,m$^2$, RMSE $\sim$5.5\,m) with
+brighter spots at the edges; the Tier-0 initialization
+collapses the error to a median of $\sim$1.5\,m$^2$
+(RMSE $\sim$1.2\,m) almost everywhere, with a localized
+high-error region only in the upper-right corner of the
+lot. The same pattern appears on
+\texttt{indoor\_garage\_parking\_01} (env~5). The
+visualization confirms the table-level numbers: the
+Tier-0 advantage is \emph{spatially uniform} --- it is not
+the case that one model is better only in some region of
+the room.
+
+\begin{figure}[t]
+  \centering
+  \begin{minipage}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/tier1_sionna/tier1_error_heatmap_env4.png}
+    \caption*{(a) \texttt{outdoor\_parking\_01}}
+  \end{minipage}\hfill
+  \begin{minipage}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/tier1_sionna/tier1_error_heatmap_env5.png}
+    \caption*{(b) \texttt{indoor\_garage\_parking\_01}}
+  \end{minipage}
+  \caption{Per-position query MSE on the two held-out
+  scenes, at $K{=}20$ shots. Each dot is a window's tag
+  position, colored by squared error in m$^2$ on a
+  log scale. The Tier-0 pretrained initialization produces
+  a uniformly low error across the floor area, while the
+  random baseline has bright high-error spots throughout
+  the room. The error is concentrated near the top-right
+  corner of each lot, far from the four anchors.}
+  \label{fig:tier1-heatmap}
+\end{figure}
+
+\paragraph{Transfer matrix.}
+Finally, we ask which \emph{train scene} the $K{=}20$
+support shots should come from for best cross-scene
+adaptation. Figure~\ref{fig:tier1-transfer} is a 2-row
+$\times$ 4-column matrix: rows are the two held-out val
+scenes, columns are the four train scenes, cells are the
+query MSE after K-shot adaptation from that train scene
+to that val scene. Three observations:
+
+\begin{enumerate}
+  \item The best source is \texttt{empty\_open} for both
+    val scenes (32--38\,m$^2$); the worst source is the
+    heavy-NLOS pillar scenes (53--57\,m$^2$). Source and
+    target NLOS distribution should match for best
+    transfer; the parking val scenes are nearly all LOS,
+    so a clean-LOS source helps more than a heavy-NLOS one.
+  \item The Tier-0 column is uniformly lighter than the
+    random column at every (source, target) pair, with
+    reductions ranging from 5\% (NLOS-source transfer) to
+    16\% (LOS-source transfer).
+  \item The transfer matrix is \emph{not} diagonal ---
+    a model trained for one geometry helps even on a
+    different geometry. This is the FOMAML property the
+    paper claims: the initialization is geometry-agnostic,
+    not geometry-specific.
+\end{enumerate}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.85\linewidth]{figures/tier1_sionna/tier1_transfer_matrix.png}
+  \caption{Transfer matrix: query MSE at $K{=}20$ when the
+  $K$ support shots come from one of the four train scenes
+  (columns) and evaluation is on one of the two held-out
+  scenes (rows). Left: random init. Right: Tier-0
+  pretrained. The Tier-0 matrix is uniformly lighter (5--16\%
+  reduction) and has the same shape, confirming the
+  transfer advantage is consistent across source-target
+  geometry pairs.}
+  \label{fig:tier1-transfer}
+\end{figure}

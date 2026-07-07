@@ -1,0 +1,19 @@
+channel,channel_name,units,n_masked_cells,rmse,mae,bias,r2,shrink_slope,corr_pred_dev_true_dev,visible_noise_std
+0,ToA (m),m,7670,0.206532,0.139224,0.005563,0.995099,0.005771,0.001425,0.049758
+1,AoA azimuth (deg),deg,7670,6.714300,4.381486,-0.284136,0.995808,2281.986529,0.028172,0.000081
+rmse_A1_ToA,0.212536
+bias_A1_ToA,0.019043
+rmse_A2_ToA,0.220062
+bias_A2_ToA,-0.000089
+rmse_A3_ToA,0.185424
+bias_A3_ToA,0.007816
+rmse_A4_ToA,0.207262
+bias_A4_ToA,-0.004662
+rmse_A1_AoA,7.186319
+bias_A1_AoA,0.329107
+rmse_A2_AoA,6.154350
+bias_A2_AoA,-0.053058
+rmse_A3_AoA,6.753954
+bias_A3_AoA,-0.510063
+rmse_A4_AoA,6.724576
+bias_A4_AoA,-0.899658

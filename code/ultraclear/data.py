@@ -62,8 +62,13 @@ def simulate_trace(
     T: int,
     rng: np.random.Generator,
     n_channels: int,
-) -> Tuple[np.ndarray, np.ndarray, int, int]:
-    """Return (X[T,M,F], y[2], env_id, condition_id)."""
+) -> Tuple[np.ndarray, np.ndarray, int, int, np.ndarray]:
+    """Return (X[T,M,F], y[2], env_id, condition_id, nlos[T,M] bool).
+
+    nlos is the per-anchor, per-timestep ground-truth NLOS mask — used as
+    the NLOS head target and to verify the micro-encoder learned a
+    condition vector that *is* informative about the micro state.
+    """
     M = env.anchor_xy.shape[0]
     nlos_rate, nlos_strength, mp_std = _micro_params(condition_id)
 
@@ -78,7 +83,7 @@ def simulate_trace(
     dist = np.linalg.norm(diff, axis=-1)                 # (T, M)
 
     # NLOS events: per-anchor, per-timestep bernoulli
-    nlos = rng.random(size=(T, M)) < nlos_rate
+    nlos = (rng.random(size=(T, M)) < nlos_rate)         # (T, M) bool
     bias = nlos.astype(np.float32) * (env.nlos_bias[None, :] * nlos_strength)
 
     noise = rng.normal(0.0, mp_std, size=(T, M)).astype(np.float32) + bias
@@ -95,42 +100,64 @@ def simulate_trace(
 
     # label = position at the middle timestep
     y = pos[T // 2]
-    return X.astype(np.float32), y.astype(np.float32), env.env_id, condition_id
+    return (
+        X.astype(np.float32),
+        y.astype(np.float32),
+        env.env_id,
+        condition_id,
+        nlos,                                # (T, M) bool
+    )
 
 
 def build_synthetic_dataset(
     cfg: Config, seed: int = 0
-) -> List[Tuple[np.ndarray, np.ndarray, int, int]]:
-    """Build a flat list of (X, y, env_id, cond_id) over all envs × traces × conds."""
+) -> List[Tuple[np.ndarray, np.ndarray, int, int, np.ndarray]]:
+    """Build a flat list of (X, y, env_id, cond_id, nlos) over all envs × traces × conds."""
     rng = np.random.default_rng(seed)
     envs: List[SyntheticEnv] = [
         _make_random_env(rng, i, cfg.n_anchors) for i in range(cfg.n_synthetic_envs)
     ]
-    data: List[Tuple[np.ndarray, np.ndarray, int, int]] = []
+    data: List[Tuple[np.ndarray, np.ndarray, int, int, np.ndarray]] = []
     for env in envs:
         for _ in range(cfg.samples_per_env):
             cond = int(rng.integers(0, cfg.n_micro_conditions))
-            X, y, eid, cid = simulate_trace(
+            X, y, eid, cid, nlos = simulate_trace(
                 env, cond, cfg.seq_len, rng, cfg.n_channels
             )
-            data.append((X, y, eid, cid))
+            data.append((X, y, eid, cid, nlos))
     return data
 
 
 class TensorUWB(Dataset):
-    """Wrap a list of (X, y, env_id, cond_id) as tensors for DataLoader use."""
+    """Wrap a list of (X, y, env_id, cond_id[, nlos]) as tensors for DataLoader use.
 
-    def __init__(self, items: List[Tuple[np.ndarray, np.ndarray, int, int]]):
-        self.X = torch.from_numpy(np.stack([x for x, _, _, _ in items])).float()
-        self.y = torch.from_numpy(np.stack([y for _, y, _, _ in items])).float()
-        self.env = torch.tensor([e for _, _, e, _ in items], dtype=torch.long)
-        self.cond = torch.tensor([c for _, _, _, c in items], dtype=torch.long)
+    The 5-tuple form (with NLOS mask) is the new canonical format. Legacy
+    4-tuple inputs are still accepted for backward compatibility with
+    existing scripts; NLOS will be reported as an all-False mask.
+    """
+
+    def __init__(self, items):
+        n = len(items)
+        # Detect tuple arity
+        if items and len(items[0]) == 5:
+            Xs, ys, es, cs, ns = zip(*items)
+        elif items and len(items[0]) == 4:
+            Xs, ys, es, cs = zip(*items)
+            T, M = Xs[0].shape[:2]
+            ns = [np.zeros((T, M), dtype=bool) for _ in range(n)]
+        else:
+            raise ValueError(f"unexpected item tuple arity: {len(items[0])}")
+        self.X = torch.from_numpy(np.stack(list(Xs))).float()
+        self.y = torch.from_numpy(np.stack(list(ys))).float()
+        self.env = torch.tensor(list(es), dtype=torch.long)
+        self.cond = torch.tensor(list(cs), dtype=torch.long)
+        self.nlos = torch.from_numpy(np.stack(list(ns))).bool()    # (N, T, M)
 
     def __len__(self) -> int:
         return self.X.shape[0]
 
     def __getitem__(self, i: int):
-        return self.X[i], self.y[i], self.env[i], self.cond[i]
+        return self.X[i], self.y[i], self.env[i], self.cond[i], self.nlos[i]
 
 
 def make_synthetic(cfg: Config, seed: int = 0) -> Tuple[List, List]:

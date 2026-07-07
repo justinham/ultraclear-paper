@@ -1,0 +1,241 @@
+% =============================================================================
+% Tier 0 SSL pipeline — detailed figure for the paper.
+%
+% A standalone, self-contained TikZ figure showing the flow of data and
+% gradients through the self-supervised pretraining stage. Layout is a
+% left-to-right pipeline with four columns:
+%
+%   [raw -> mask -> masked]  ->  [ASTA encoder]  ->  [SSL head]  ->  [loss]
+%                                       |                               ^
+%                                       v                               |
+%                              [pretrained encoder]  (reused downstream)
+%
+% Compile via \input{} from main.tex (which already loads tikz), or
+% standalone with:
+%   pdflatex tier0_pipeline.tex
+%
+% Style matches figures/architecture.tex so the figures feel
+% consistent: same sffamily font, same rounded-corner blocks, same
+% blue/orange/teal palette.
+% =============================================================================
+\begin{tikzpicture}[
+  font=\sffamily\small,
+  node distance=8mm and 6mm,
+  every node/.style={transform shape},
+  cell/.style={draw, minimum width=2.4mm, minimum height=2.4mm, inner sep=0pt,
+                fill=blue!8},
+  cellaoa/.style={draw, minimum width=2.4mm, minimum height=2.4mm, inner sep=0pt,
+                   fill=orange!15},
+  cellmask/.style={draw, minimum width=2.4mm, minimum height=2.4mm, inner sep=0pt,
+                   fill=blue!4},
+  cellmaskaoa/.style={draw, minimum width=2.4mm, minimum height=2.4mm, inner sep=0pt,
+                      fill=orange!4},
+  cellblk/.style={draw, minimum width=2.4mm, minimum height=2.4mm, inner sep=0pt,
+                  fill=black!90},
+  block/.style={draw, rounded corners=2pt, minimum width=18mm,
+                minimum height=9mm, align=center, fill=blue!10},
+  acc/.style={draw, rounded corners=2pt, minimum width=18mm,
+              minimum height=9mm, align=center, fill=orange!18},
+  feat/.style={draw, rounded corners=2pt, minimum width=18mm,
+               minimum height=9mm, align=center, fill=teal!18},
+  in/.style={draw, rounded corners=2pt, minimum width=18mm,
+             minimum height=9mm, align=center, fill=blue!22},
+  out/.style={draw, rounded corners=2pt, minimum width=24mm,
+              minimum height=10mm, align=center, fill=teal!22},
+  loss/.style={draw, rounded corners=2pt, minimum width=22mm,
+               minimum height=10mm, align=center, fill=red!14},
+  arr/.style={->, >=stealth, thick},
+  arrdash/.style={->, >=stealth, thick, dashed, color=blue!50!black},
+  arrthin/.style={->, >=stealth, thin, color=blue!50!black},
+  arrupd/.style={->, >=stealth, thick},
+]
+
+% =============================================================================
+% COLUMN 1: data prep (raw -> mask -> masked)
+% =============================================================================
+\begin{scope}[local bounding box=col1, shift={(0,0)}]
+  % --- raw window (ToA on top, AoA below) ---
+  \node[anchor=south] at (10mm, 35mm) {\textbf{raw window} $\bm{X}$};
+  \foreach \t in {0,...,7} {
+    \foreach \m in {0,...,3} {
+      \node[cell, minimum width=2.4mm, minimum height=2.4mm, inner sep=0pt]
+        at (\t*2.4mm + 1.5mm, 32mm - \m*2.4mm) {};
+      \node[cellaoa, minimum width=2.4mm, minimum height=2.4mm, inner sep=0pt]
+        at (\t*2.4mm + 1.5mm, 21mm - \m*2.4mm) {};
+    }
+  }
+  \node[anchor=west, font=\scriptsize, color=blue!60!black]
+    at (22mm, 28mm) {ch 0: ToA (m)};
+  \node[anchor=west, font=\scriptsize, color=orange!70!black]
+    at (22mm, 17mm) {ch 1: AoA (°)};
+  \node[anchor=west, font=\scriptsize, color=blue!60!black]
+    at (22mm, 11mm) {$(T{=}32,\,M{=}4,\,F{=}2)$};
+
+  % --- random mask ---
+  \node[anchor=south] at (10mm, 8mm) {\textbf{random mask} $\bm{M}$};
+  \foreach \t/\m/\b in {
+    0/1/1, 0/3/1,
+    1/2/1,
+    2/2/1,
+    3/0/1,
+    4/1/1,
+    5/2/1,
+    6/2/1,
+    7/0/1, 7/3/1} {
+    \ifnum\b=1
+      \node[cellblk] at (\t*2.4mm + 1.5mm, 5mm - \m*2.4mm) {};
+    \else
+      \node[cellmask] at (\t*2.4mm + 1.5mm, 5mm - \m*2.4mm) {};
+    \fi
+  }
+  \node[anchor=west, font=\scriptsize, color=blue!60!black]
+    at (22mm, 1mm) {$(T,M)$ bool, $p{=}0.25$};
+  \node[anchor=west, font=\scriptsize, color=red!50!black]
+    at (22mm, -2mm) {joint across $F$};
+
+  % --- masked input ---
+  \node[anchor=south] at (10mm, -8mm) {\textbf{masked input} $\tilde{\bm{X}}$};
+  \foreach \t/\m/\b in {
+    0/1/1, 0/3/1,
+    1/2/1,
+    2/2/1,
+    3/0/1,
+    4/1/1,
+    5/2/1,
+    6/2/1,
+    7/0/1, 7/3/1} {
+    \ifnum\b=1
+      \node[cellblk] at (\t*2.4mm + 1.5mm, -11mm - \m*2.4mm) {};
+      \node[cellblk] at (\t*2.4mm + 1.5mm, -22mm - \m*2.4mm) {};
+    \else
+      \node[cell] at (\t*2.4mm + 1.5mm, -11mm - \m*2.4mm) {};
+      \node[cellaoa] at (\t*2.4mm + 1.5mm, -22mm - \m*2.4mm) {};
+    \fi
+  }
+
+  % raw -> mask
+  \draw[arr] (10mm, 19mm) -- (10mm, 11mm)
+    node[midway, right, font=\scriptsize, color=blue!60!black] {sample};
+  % mask -> masked
+  \draw[arr] (10mm, -1mm) -- (10mm, -7mm)
+    node[midway, right, font=\scriptsize, color=blue!60!black] {apply};
+\end{scope}
+
+% encode arrow: from right of masked input, right then up to TCN
+\begin{scope}
+  \coordinate (enc_start) at (22mm, -16mm);   % right of masked input, mid AoA row
+  \coordinate (enc_mid)   at (35mm, -16mm);   % midway horizontally
+  \coordinate (enc_top)   at (35mm, 32mm);     % up to TCN level
+  \draw[arr] (enc_start) -- (enc_mid);
+  \draw[arr] (enc_mid) -- (enc_top);
+  \node[font=\scriptsize, color=blue!60!black, fontstyle=\itshape]
+    at (35mm, -19mm) {encode};
+\end{scope}
+
+% =============================================================================
+% COLUMN 2: ASTA encoder
+% =============================================================================
+\begin{scope}[local bounding box=col2, shift={(50mm, 0)}]
+  \node[anchor=south, font=\bfseries] at (0, 36mm) {ASTA encoder $f_\theta$};
+  \node[anchor=north, font=\scriptsize, color=blue!60!black, fontstyle=\itshape]
+    at (0, 36mm) {$(T,M,F) \to (T,M,d{=}64)$};
+
+  \node[block, fill=blue!10, minimum width=20mm]
+    (tcn) at (0, 32mm) {Causal TCN\\(per-channel, $k{=}3$)};
+  \node[block, fill=teal!18, minimum width=20mm]
+    (gcn) at (0, 25mm) {Dynamic GCN\\$A^{(c)}$ per-channel};
+  \node[block, fill=orange!18, minimum width=20mm]
+    (mhsa) at (0, 18mm) {Multi-Head\\Self-Attn\\$h{=}4$, $d{=}64$};
+
+  \draw[arr] (tcn) -- (gcn) node[midway, right, font=\scriptsize] {$\bm{H}$};
+  \draw[arr] (gcn) -- (mhsa);
+
+  % residual bracket on the right
+  \draw[arrthin] (10mm, 32mm) -- (10mm, 18mm);
+  \node[anchor=west, font=\scriptsize, color=blue!50!black, fontstyle=\itshape]
+    at (11mm, 25mm) {+ residual};
+\end{scope}
+
+% encoder -> head: short diagonal up-right
+\begin{scope}
+  \coordinate (enc_out) at (60mm, 18mm);
+  \coordinate (head_in) at (82mm, 28mm);
+  \draw[arr] (enc_out) -- (head_in)
+    node[midway, above, font=\scriptsize, color=teal!60!black, fontstyle=\itshape]
+    {$\bm{H}$};
+\end{scope}
+
+% =============================================================================
+% COLUMN 3: SSL head
+% =============================================================================
+\begin{scope}[local bounding box=col3, shift={(82mm, 0)}]
+  \node[anchor=south, font=\bfseries] at (0, 36mm) {SSL head $g$};
+  \node[anchor=north, font=\scriptsize, color=blue!60!black, fontstyle=\itshape]
+    at (0, 36mm) {2-layer MLP, $d \to d \to F$};
+
+  \node[block, minimum width=20mm] (lin1) at (0, 28mm) {Linear$(d{\to}d)$\\$+$ GELU};
+  \node[block, minimum width=20mm] (lin2) at (0, 21mm) {Linear$(d{\to}F)$};
+
+  \draw[arr] (lin1) -- (lin2);
+
+  \node[anchor=west, font=\scriptsize, color=orange!70!black, fontstyle=\itshape]
+    at (12mm, 21mm) {$\hat{\bm{X}}$ (ToA+AoA)};
+\end{scope}
+
+% head -> loss: short diagonal up-right
+\begin{scope}
+  \coordinate (head_out) at (92mm, 21mm);
+  \coordinate (loss_in)  at (113mm, 30mm);
+  \draw[arr] (head_out) -- (loss_in)
+    node[midway, above, font=\scriptsize, color=orange!70!black, fontstyle=\itshape]
+    {$\hat{\bm{X}}$};
+\end{scope}
+
+% =============================================================================
+% COLUMN 4: loss
+% =============================================================================
+\begin{scope}[local bounding box=col4, shift={(113mm, 0)}]
+  \node[anchor=south, font=\bfseries] at (0, 36mm) {loss};
+
+  \node[loss, minimum width=28mm, minimum height=11mm]
+    (loss_eq) at (0, 30mm) {$\mathcal{L}{=}\frac{\sum \bm{M}\!\odot\!(\hat{\bm{X}}{-}\bm{X})^2}{\sum \bm{M}}$};
+
+  \node[anchor=west, font=\scriptsize, color=red!50!black, fontstyle=\itshape, align=left]
+    at (15mm, 28mm) {per-channel\\weights\\$w_{\text{ToA}}{=}3$};
+
+  \node[loss, minimum width=22mm, minimum height=8mm]
+    (adam) at (0, 19mm) {Adam, $\eta{=}10^{-3}$\\30--100 epochs};
+
+  \draw[arr] (loss_eq) -- (adam);
+\end{scope}
+
+% =============================================================================
+% TRUE-X dashed path: from raw window, over the top, down to loss
+% =============================================================================
+\begin{scope}
+  \coordinate (true_start) at (10mm, 32mm);  % top of raw window
+  \draw[arrdash] (true_start) -- (10mm, 45mm);
+  \draw[arrdash] (10mm, 45mm) -- (113mm, 45mm);
+  \draw[arrdash] (113mm, 45mm) -- (113mm, 35.5mm);
+  \node[font=\scriptsize, color=blue!50!black, fontstyle=\itshape]
+    at (60mm, 47mm) {true $\bm{X}$ (from data)};
+\end{scope}
+
+% =============================================================================
+% BELOW column 2: pretrained encoder output box
+% =============================================================================
+\begin{scope}
+  \node[out] (enc_out_box) at (50mm, 5mm)
+    {\textbf{pretrained encoder} $f_{\theta^*}$\\(reused by Tier 1 / 3)};
+
+  % parameters arrow from MHSA down to encoder output
+  \draw[arr, color=teal!60!black] (50mm, 14mm) -- (50mm, 10mm)
+    node[midway, right, font=\scriptsize, color=teal!60!black, fontstyle=\itshape]
+    {params};
+
+  % update arrow from Adam down/left to encoder output
+  \draw[arrupd] (105mm, 15mm) .. controls (95mm, 8mm) .. (65mm, 6mm)
+    node[pos=0.4, below, font=\scriptsize, fontstyle=\itshape] {update};
+\end{scope}
+
+\end{tikzpicture}

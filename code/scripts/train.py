@@ -49,7 +49,7 @@ def run_tier0(cfg: Config, train_items, device) -> ASTAEncoder:
     for ep in range(cfg.ssl_epochs):
         total = 0.0
         n = 0
-        for X, _, _, _ in loader:
+        for X, _, _, _, _ in loader:
             X = X.to(device)
             opt.zero_grad()
             x_pred, mask = model(X)
@@ -93,7 +93,7 @@ def run_tier3_finetune(
     for ep in range(cfg.finetune_epochs):
         total = 0.0
         n = 0
-        for X, y, _, _ in train_loader:
+        for X, y, _, _, _ in train_loader:
             X, y = X.to(device), y.to(device)
             opt.zero_grad()
             out = model(X)
@@ -120,7 +120,7 @@ def eval_model(model, val_items, device) -> float:
     total_err = 0.0
     n = 0
     with torch.no_grad():
-        for X, y, _, _ in loader:
+        for X, y, _, _, _ in loader:
             X, y = X.to(device), y.to(device)
             out = model(X)
             err = torch.linalg.norm(out["loc"] - y, dim=-1)

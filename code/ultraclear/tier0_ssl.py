@@ -78,11 +78,32 @@ class SSLPretrainer(nn.Module):
 
 
 def ssl_loss(
-    x_pred: torch.Tensor, x_true: torch.Tensor, mask: torch.Tensor
+    x_pred: torch.Tensor,
+    x_true: torch.Tensor,
+    mask: torch.Tensor,
+    channel_weights: torch.Tensor | None = None,
 ) -> torch.Tensor:
-    """MSE on masked cells only."""
+    """Weighted MSE on masked cells only.
+
+    x_pred, x_true: (B, T, M, F).
+    mask: (B, T, M) bool.
+    channel_weights: (F,) tensor of non-negative weights, applied per
+        channel *before* the mean over channels. If None, all channels
+        get weight 1.0 (the historical F=1 default; for F=2 this means
+        ToA and AoA contribute equally to the loss, which after per-
+        channel z-scoring is the natural 50/50 split).
+
+    We intentionally keep the per-channel weights as a multiplicative
+    factor on the squared error *before* averaging over channels, so
+    that the loss is in the same units regardless of F. The `n_masked`
+    denominator is the number of (b, t, m) cells where mask is True
+    (NOT the per-channel count, which would change units).
+    """
     diff = (x_pred - x_true) ** 2                  # (B, T, M, F)
-    diff = diff.mean(dim=-1)                       # (B, T, M)
+    if channel_weights is not None:
+        # broadcast (F,) over (B, T, M, F)
+        diff = diff * channel_weights.view(1, 1, 1, -1).to(diff.device)
+    diff = diff.mean(dim=-1)                       # (B, T, M)  weighted avg over F
     diff = diff * mask.float()                     # zero out non-masked
     n_masked = mask.float().sum().clamp_min(1.0)
     return diff.sum() / n_masked
