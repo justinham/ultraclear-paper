@@ -62,7 +62,7 @@ def evaluate_on_all_windows(
     mses = []
     with torch.no_grad():
         for i in indices:
-            x, y, _, _ = ds[i]
+            x, y, _, _, _ = ds[i]
             xb = x.unsqueeze(0)
             yb = y.unsqueeze(0)
             pred = functional_call(fresh, dict(fresh.named_parameters()), (xb,))

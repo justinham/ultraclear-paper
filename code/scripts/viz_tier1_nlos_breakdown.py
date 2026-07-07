@@ -56,7 +56,7 @@ def sample_task_by_cond(
     chosen = rng.choice(indices, size=min(n, len(indices)), replace=False)
     xs, ys = [], []
     for i in chosen:
-        x, y, _, _ = ds[int(i)]
+        x, y, _, _, _ = ds[int(i)]
         xs.append(x)
         ys.append(y)
     return torch.stack(xs), torch.stack(ys)
@@ -119,7 +119,7 @@ def main():
     print(f"\ncond distribution in val scenes (env {args.val_scenes}):")
     cond_counts = {0: 0, 1: 0}
     for i in range(len(ds)):
-        _, _, eid, c = ds[i]
+        _, _, eid, c, _ = ds[i]
         if int(eid) in args.val_scenes:
             cond_counts[int(c)] += 1
     print(f"  cond=0 (all LOS): {cond_counts[0]}")

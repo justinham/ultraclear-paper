@@ -91,7 +91,7 @@ def sample_task_multi(
     chosen = rng.choice(indices, size=min(n, len(indices)), replace=False)
     xs, ys = [], []
     for i in chosen:
-        x, y, _, _ = ds[int(i)]
+        x, y, _, _, _ = ds[int(i)]
         xs.append(x)
         ys.append(y)
     return torch.stack(xs), torch.stack(ys)
