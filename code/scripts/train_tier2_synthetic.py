@@ -50,6 +50,7 @@ from ultraclear.data import build_synthetic_dataset, TensorUWB
 from ultraclear.tier0_ssl import SSLPretrainer, ssl_loss
 from ultraclear.tier1_maml import MAMLCore, maml_train
 from ultraclear.tier2_micro import DisentangledModel
+from ultraclear.tier3_heads import AttentionUWB
 from ultraclear.tier3_heads import NLOSHead, LocationHeadFromRestore, RestorationHead
 
 
@@ -74,6 +75,41 @@ class LocationHead(nn.Module):
         w = TF.softmax(a.view(B, T * M), dim=-1).view(B, T, M).unsqueeze(-1)
         pooled = (h * w).sum(dim=(1, 2))
         return self.mlp(pooled)
+
+
+class LocationHeadPerTimestep(nn.Module):
+    """Per-timestep location head for moving-tag localization.
+
+    Input  h: (B, T, M, d_model) — encoder output
+    Output:    (B, T, 2) — one (x, y) per timestep
+
+    Pools over the M anchor dim only (not over T), so each timestep
+    gets its own prediction. The pool is a learnable attention-
+    weighted average across the 4 anchors.
+
+    The MSE loss is computed across all (B, T) outputs vs the (B, T, 2)
+    labels. For a stationary tag, all T outputs will be (approximately)
+    equal and the head will learn to ignore the time axis. For a
+    moving tag, each T step has a distinct (x, y) label.
+    """
+    def __init__(self, d_model: int):
+        super().__init__()
+        # attention over the M anchors, shared across T
+        self.anchor_attn = nn.Linear(d_model, 1)
+        self.mlp = nn.Sequential(
+            nn.Linear(d_model, d_model),
+            nn.GELU(),
+            nn.Linear(d_model, 2),
+        )
+
+    def forward(self, h: torch.Tensor) -> torch.Tensor:
+        """h: (B, T, M, d_model) -> (B, T, 2)."""
+        B, T, M, D = h.shape
+        a = self.anchor_attn(h).squeeze(-1)   # (B, T, M)
+        w = TF.softmax(a, dim=-1)              # (B, T, M) — sum to 1 over M
+        w = w.unsqueeze(-1)                    # (B, T, M, 1)
+        pooled = (h * w).sum(dim=2)            # (B, T, D) — sum over M
+        return self.mlp(pooled)                # (B, T, 2)
 
 
 # ----------------------------------------------------------------------------
@@ -101,7 +137,7 @@ class DisentangledTrainer(nn.Module):
         super().__init__()
         self.cfg = cfg
         self.disent = DisentangledModel(cfg, n_envs=n_envs)
-        self.loc_head = LocationHead(cfg.d_model)
+        self.loc_head = LocationHeadPerTimestep(cfg.d_model)
         # NLOS head: per-(B, T, M) logits from c. One shared MLP that
         # takes c and emits per-anchor logits, replicated across T.
         self.nlos_mlp = nn.Sequential(
@@ -150,6 +186,149 @@ def linear_probe_acc(c_train, env_train, c_val, env_val, n_envs, device, epochs=
     return acc
 
 
+class AttentionDisentangledTrainer(nn.Module):
+    """Same as `DisentangledTrainer` but uses the AttentionUWB backbone
+    (nn.TransformerEncoder over flattened T*M tokens) instead of the
+    GCN+STA ASTAEncoder.
+
+    The output contract is the same as `DisentangledTrainer`:
+      h_prime : (B, T, M, d)  FiLM-modulated features (broadcast across T
+                              from the per-anchor post-FiLM embedding)
+      c       : (B, micro_dim) micro condition vector
+      adv_logits : (B, n_envs) adversary logits
+      cond_logits : (B, n_conds) condition classifier
+      loc     : (B, 2) location prediction (mean-pool over T, then
+                flatten-anchors MLP, as in AttentionUWB)
+      nlos_logits : (B, T, M) NLOS head logits (from c, broadcast across T)
+
+    The loc_head here is the per-anchor pos head from AttentionUWB, not
+    LocationHeadPerTimestep. FOMAML inner loop still adapts (encoder,
+    loc_head) together since the per-anchor pos head has direct access
+    to the per-anchor encoder embeddings.
+
+    Phase A (SSL + FOMAML warmup) is not supported with this trainer
+    because AttentionUWB has no compatible SSL ckpt. The model is
+    randomly initialized; pass --skip_phase_a when using this class.
+    """
+
+    def __init__(self, cfg: Config, n_envs: int, n_conds: int = 3,
+                 embed_dim: int = 64, num_heads: int = 4, num_layers: int = 2):
+        super().__init__()
+        self.cfg = cfg
+        # Build the AttentionUWB but pull out the transformer as the
+        # 'encoder' so it can be FiLM-modulated the same way ASTAEncoder
+        # is in DisentangledModel. We replicate DisentangledModel's
+        # structure (encoder -> h_phi -> c, FiLM(h, c), adversary on c).
+        attn = AttentionUWB(cfg, embed_dim=embed_dim, num_heads=num_heads,
+                            num_layers=num_layers)
+        self.input_embed = attn.input_embed
+        self.pos_encoder = attn.pos_encoder
+        self.transformer = attn.transformer
+        self.embed_dim = embed_dim
+        # FiLM operates on per-anchor embeddings (B, M, d) after we
+        # mean-pool the transformer output. So the h_phi -> c path
+        # also operates on (B, M, d).
+        self.h_phi = nn.Sequential(
+            nn.Linear(embed_dim, embed_dim),
+            nn.GELU(),
+            nn.Linear(embed_dim, cfg.micro_dim),
+        )
+        # FiLM: per-anchor (B, M, d) -> (B, M, d) using c.
+        self.film_gamma = nn.Linear(cfg.micro_dim, embed_dim)
+        self.film_beta = nn.Linear(cfg.micro_dim, embed_dim)
+        # Adversary on c.
+        self.adv = nn.Sequential(
+            nn.Linear(cfg.micro_dim, cfg.adv_hidden),
+            nn.GELU(),
+            nn.Linear(cfg.adv_hidden, n_envs),
+        )
+        # Loc head: flatten per-anchor (B, M, d) -> (B, 2)
+        self.loc_head = nn.Sequential(
+            nn.Linear(embed_dim * cfg.n_anchors, 128),
+            nn.GELU(),
+            nn.Linear(128, 2),
+        )
+        # NLOS head from c (same recipe as DisentangledTrainer)
+        self.nlos_mlp = nn.Sequential(
+            nn.Linear(cfg.micro_dim, cfg.adv_hidden),
+            nn.GELU(),
+            nn.Linear(cfg.adv_hidden, cfg.n_anchors),
+        )
+        self.cond_head = nn.Linear(cfg.micro_dim, n_conds)
+        # Gradient reversal for the adversary path
+        from ultraclear.tier2_micro import _grad_reverse
+        self._grad_reverse = _grad_reverse
+
+    def _encode(self, x):
+        """x: (B, T, M, F) -> (h_anchor, c) where both are (B, M, d)/(B, micro_dim)."""
+        B, T, M, F = x.shape
+        tokens = x.reshape(B, T * M, F)
+        h = self.input_embed(tokens) + self.pos_encoder[:, : T * M, :]
+        h = self.transformer(h)                              # (B, T*M, d)
+        h = h.reshape(B, T, M, self.embed_dim)
+        h_anchor = h.mean(dim=1)                             # (B, M, d)
+        c = self.h_phi(h_anchor)                             # (B, M, micro_dim)
+        c = c.mean(dim=1)                                    # (B, micro_dim)
+        return h_anchor, c
+
+    def forward(self, x: torch.Tensor, detach_c_for_adv: bool = False):
+        h_anchor, c = self._encode(x)                        # (B, M, d), (B, micro_dim)
+        # FiLM: per-anchor gamma/beta from c
+        gamma = self.film_gamma(c).unsqueeze(1)              # (B, 1, d)
+        beta = self.film_beta(c).unsqueeze(1)                # (B, 1, d)
+        h_prime = gamma * h_anchor + beta                    # (B, M, d)
+        # Broadcast h_prime across T for compatibility with
+        # DisentangledTrainer's (B, T, M, d) contract (the FOMAML inner
+        # loop doesn't depend on the T dim for the attention model).
+        h_prime_full = h_prime.unsqueeze(1).expand(-1, self.cfg.seq_len, -1, -1)
+        # Adversary
+        c_for_adv = c.detach() if detach_c_for_adv else c
+        c_rev = self._grad_reverse(c_for_adv, lambd=self.cfg.adv_lambda)
+        adv_logits = self.adv(c_rev)
+        # Loc from h_anchor (flatten all anchors)
+        loc = self.loc_head(h_anchor.reshape(h_anchor.size(0), -1))
+        # NLOS from c, broadcast across T
+        per_anchor = self.nlos_mlp(c)                        # (B, M)
+        nlos_logits = per_anchor.unsqueeze(1).expand(-1, self.cfg.seq_len, -1)
+        cond_logits = self.cond_head(c)
+        return h_prime_full, c, adv_logits, loc, nlos_logits, cond_logits
+
+    # ---- Shim attributes for compatibility with the joint trainer ----
+    # The joint trainer's run_phase_B / run_phase_C expect
+    # `model.disent.encoder`, `model.disent.h_phi`, etc. Provide
+    # property shims that return the attention model's equivalent
+    # submodule.
+    @property
+    def disent(self):
+        class _Shim:
+            def __init__(self, parent):
+                self._p = parent
+            @property
+            def encoder(self): return self._p.transformer
+            @property
+            def h_phi(self): return self._p.h_phi
+            @property
+            def film(self):
+                # Joint trainer accesses film.parameters() to freeze
+                # the FiLM module. Pack gamma+beta into a single Module
+                # so the iteration works.
+                class _FilmShim(nn.Module):
+                    def __init__(self, p):
+                        super().__init__()
+                        self.gamma = p.film_gamma
+                        self.beta = p.film_beta
+                return _FilmShim(self._p)
+            @property
+            def adv(self): return self._p.adv
+        return _Shim(self)
+
+    @property
+    def encoder(self): return self.transformer
+
+    def parameters(self):
+        return super().parameters()
+
+
 # ----------------------------------------------------------------------------
 # Train a baseline (no Tier 2) for the comparison viz later
 # ----------------------------------------------------------------------------
@@ -165,7 +344,7 @@ def run_tier0_and_tier1_init(cfg: Config, train_items, all_items, device):
         for X, _, _, _, _ in loader:
             X = X.to(device)
             opt.zero_grad()
-            x_pred, mask = ssl(X)
+            x_pred, mask, _x = ssl(X)
             loss = ssl_loss(x_pred, X, mask)
             loss.backward()
             opt.step()
@@ -187,7 +366,7 @@ def run_baseline(
     from ultraclear.asta import ASTAEncoder
 
     enc = ASTAEncoder(cfg).to(device)
-    head = LocationHead(cfg.d_model).to(device)
+    head = LocationHeadPerTimestep(cfg.d_model).to(device)
     opt = torch.optim.Adam(list(enc.parameters()) + list(head.parameters()), lr=1e-3)
     train_loader = DataLoader(TensorUWB(train_items), batch_size=32, shuffle=True)
     enc.train(); head.train()
