@@ -156,6 +156,18 @@ def fomaml_train(
         if val_scene_env_ids and val_every > 0 and (ep + 1) % val_every == 0:
             core.eval()
             for eid in val_scene_env_ids:
+                # Find the SceneInfo for this env_id so we can
+                # denormalize pred/y back to meters for the
+                # per-env loc err in meters.
+                info_eid = next(
+                    (i for i, s in enumerate(ds.scene_info) if s.env_id == int(eid)),
+                    None,
+                )
+                if info_eid is None:
+                    continue
+                sinfo = ds.scene_info[info_eid]
+                tag_xy_mean = torch.from_numpy(sinfo.tag_xy_mean).to(device) if sinfo.tag_xy_mean is not None else None
+                tag_xy_std = torch.from_numpy(sinfo.tag_xy_std).to(device) if sinfo.tag_xy_std is not None else None
                 trial_errs_m = []
                 for trial in range(val_trials):
                     sx, sy = sample_task_multi(ds, int(eid), val_k,
@@ -171,19 +183,19 @@ def fomaml_train(
                         inner_lr=cfg.maml_inner_lr,
                         inner_steps=cfg.maml_inner_steps,
                     )
-                    # q_pred and q_y are both in meters (the
-                    # MultiSceneSionnaDataset does not z-score the
-                    # tag_xy labels). RMSE = sqrt(MSE) = loc error
-                    # in meters, matching the supervised baseline's
-                    # val loc err convention.
+                    # q_pred and q_y are both in z-scored xy units
+                    # (MultiSceneSionnaDataset now z-scores tag_xy
+                    # per scene). Denormalize to meters for the
+                    # loc err in meters, matching the supervised
+                    # baseline's per-cond loc err convention.
                     q_pred = info.get("q_pred")
-                    if q_pred is not None:
+                    if q_pred is not None and tag_xy_mean is not None:
                         T_q = qx.size(1)
                         q_y_mid = qy[:, T_q // 2, :]
-                        # Per-sample Euclidean error in meters, then
-                        # mean over the query batch.
+                        q_pred_m = q_pred * tag_xy_std + tag_xy_mean
+                        q_y_mid_m = q_y_mid * tag_xy_std + tag_xy_mean
                         per_sample_err = torch.linalg.norm(
-                            q_pred - q_y_mid, dim=-1
+                            q_pred_m - q_y_mid_m, dim=-1
                         ).cpu().numpy()
                         trial_errs_m.append(float(per_sample_err.mean()))
                 if trial_errs_m:
@@ -377,10 +389,16 @@ def main():
             w = _csv.writer(f)
             w.writerow(["episode", "phase", "k", "env_id", "value"])
             for i, v in enumerate(train_losses):
-                # q_loss is MSE in meters^2 (the MultiSceneSionnaDataset
-                # does not z-score tag_xy); sqrt(MSE) = RMSE = loc err
-                # in meters per FOMAML query batch.
-                w.writerow([i + 1, "train_loc_err_m_rmse", "", "", f"{v ** 0.5:.6f}"])
+                # q_loss is MSE in z-scored xy units (the
+                # MultiSceneSionnaDataset z-scores tag_xy per scene
+                # so the FOMAML sees consistent normalized xy
+                # regardless of scene scale). sqrt(MSE) = RMSE in
+                # z-scored units. For a per-episode loc err in
+                # meters, multiply by the mean per-scene xy_std
+                # across the envs in the meta-batch (approximate,
+                # since the meta-batch composition varies per ep).
+                rmse_z = v ** 0.5
+                w.writerow([i + 1, "train_loc_err_z_rmse", "", "", f"{rmse_z:.6f}"])
             for ck in val_checkpoints:
                 w.writerow([ck["episode"], "val_loc_err_m",
                             ck["k"], ck["env_id"], f"{ck['loc_err_m']:.6f}"])

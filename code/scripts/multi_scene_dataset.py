@@ -43,6 +43,8 @@ class SceneInfo:
     nlos_rate: float    # 0..1, fraction of trials with at least one NLOS anchor
     n_grids: int        # number of grid cells
     n_trials: int       # trials per grid
+    tag_xy_mean: np.ndarray | None = None  # (2,) per-scene xy mean in meters
+    tag_xy_std: np.ndarray | None = None   # (2,) per-scene xy std in meters
 
 
 def _per_trial_cond_id(df: pd.DataFrame) -> np.ndarray:
@@ -69,6 +71,9 @@ def build_multi_scene_dataset(
     """
     per_scene_features: List[np.ndarray] = []
     per_scene_tag_xy: List[np.ndarray] = []
+    per_scene_tag_xy_z: List[np.ndarray] = []
+    per_scene_tag_xy_mean: List[np.ndarray] = []
+    per_scene_tag_xy_std: List[np.ndarray] = []
     per_scene_cond: List[np.ndarray] = []
     scene_info: List[SceneInfo] = []
 
@@ -103,17 +108,34 @@ def build_multi_scene_dataset(
 
         # tag positions
         tag_xy = df[["tag_x", "tag_y"]].values.astype(np.float32).reshape(n_grids, n_trials, 2)
+        # Per-scene xy z-score normalization. Different Sionna scenes
+        # have wildly different scales (custom_room ~3m, empty_open
+        # ~8m, parking_01 ~20m), so without this the FOMAML would
+        # be asked to predict raw meters on every scene regardless
+        # of scale, which makes the meta-learning signal noisy
+        # (a 1m improvement on a 3m scene looks the same as a 1m
+        # improvement on a 20m scene, but they're very different
+        # relative achievements). We keep the raw tag_xy for
+        # denormalization at eval time and store the z-scored
+        # version as tag_xy_z.
+        tag_xy_mean = tag_xy.reshape(-1, 2).mean(axis=0)
+        tag_xy_std = tag_xy.reshape(-1, 2).std(axis=0) + 1e-6
+        tag_xy_z = ((tag_xy - tag_xy_mean) / tag_xy_std).astype(np.float32)
         # cond_id: per-trial NLOS indicator (0 = all LOS, 1 = any NLOS)
         los = np.stack([df[f"A{m}_los_nlos"].values for m in range(1, 5)], axis=1)
         cond = (los == 0).any(axis=1).astype(np.int64).reshape(n_grids, n_trials)
 
         per_scene_features.append(feat)
         per_scene_tag_xy.append(tag_xy)
+        per_scene_tag_xy_z.append(tag_xy_z)
+        per_scene_tag_xy_mean.append(tag_xy_mean)
+        per_scene_tag_xy_std.append(tag_xy_std)
         per_scene_cond.append(cond)
         scene_info.append(SceneInfo(
             name=name, env_id=env_id,
             nlos_rate=float(cond.any(axis=1).mean()) if cond.size else 0.0,
             n_grids=n_grids, n_trials=n_trials,
+            tag_xy_mean=tag_xy_mean, tag_xy_std=tag_xy_std,
         ))
         print(f"  env {env_id} ({name:35s}): {n_grids} grids x {n_trials} trials, "
               f"any-NLOS rate {scene_info[-1].nlos_rate*100:5.1f}%")
@@ -121,6 +143,7 @@ def build_multi_scene_dataset(
     ds = MultiSceneSionnaDataset.from_per_scene(
         per_scene_features, per_scene_tag_xy, per_scene_cond,
         scene_info, seq_len=seq_len, stride=stride,
+        per_scene_tag_xy_z=per_scene_tag_xy_z,
     )
     return ds, scene_info
 
@@ -146,11 +169,12 @@ class MultiSceneSionnaDataset(Dataset):
     def from_per_scene(
         cls,
         per_scene_features: List[np.ndarray],   # list of (n_grids, n_trials, M, F)
-        per_scene_tag_xy: List[np.ndarray],     # list of (n_grids, n_trials, 2)
+        per_scene_tag_xy: List[np.ndarray],     # list of (n_grids, n_trials, 2) raw meters
         per_scene_cond: List[np.ndarray],       # list of (n_grids, n_trials) int
         scene_info: List[SceneInfo],
         seq_len: int = 32,
         stride: int = 32,
+        per_scene_tag_xy_z: List[np.ndarray] | None = None,  # list of (n_grids, n_trials, 2) z-scored
     ):
         """Direct constructor that takes already-grouped per-scene arrays."""
         ds = cls.__new__(cls)
@@ -159,10 +183,12 @@ class MultiSceneSionnaDataset(Dataset):
         ds.n_channels = per_scene_features[0].shape[-1]
         ds.scene_info = scene_info
         ds._per_scene = []
-        for f, xy, c in zip(per_scene_features, per_scene_tag_xy, per_scene_cond):
+        for s_idx, (f, xy, c) in enumerate(zip(per_scene_features, per_scene_tag_xy, per_scene_cond)):
+            xy_z = per_scene_tag_xy_z[s_idx] if per_scene_tag_xy_z is not None else xy
             ds._per_scene.append({
                 "feat": f,         # (n_grids, n_trials, M, F)
-                "tag_xy": xy,      # (n_grids, n_trials, 2)
+                "tag_xy": xy,      # raw meters
+                "tag_xy_z": xy_z,  # z-scored (or raw, if not provided)
                 "cond": c,         # (n_grids, n_trials)
             })
         # build window index: (scene_idx, grid_idx, start_trial)
@@ -202,7 +228,10 @@ class MultiSceneSionnaDataset(Dataset):
         x = scene["feat"][g, s : s + self.seq_len]              # (T, M, F)
         if hasattr(self, "norm_mean"):
             x = (x - self.norm_mean) / self.norm_std
-        y = scene["tag_xy"][g, s : s + self.seq_len]          # (T, 2) per-timestep
+        # z-scored tag_xy so the FOMAML sees consistent normalized
+        # xy regardless of scene scale. Denormalize at eval time
+        # using scene_info[scene_idx].tag_xy_mean/std.
+        y = scene["tag_xy_z"][g, s : s + self.seq_len]        # (T, 2) per-timestep
         c = int(scene["cond"][g, s + self.seq_len // 2])        # 0 or 1
         env_id = self.scene_info[s_idx].env_id
         T_, M_, _ = x.shape
