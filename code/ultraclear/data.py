@@ -44,7 +44,7 @@ def _make_random_env(rng: np.random.Generator, env_id: int, M: int) -> Synthetic
     anchor_xy = np.stack([xs, ys], axis=1).astype(np.float32)
     tag_init = rng.uniform(-3.0, 3.0, size=2).astype(np.float32)
     walk_scale = float(rng.uniform(0.1, 0.4))
-    nlos_bias = rng.uniform(0.2, 1.5, size=M).astype(np.float32)
+    nlos_bias = rng.uniform(0.0, 0.5, size=M).astype(np.float32)
     return SyntheticEnv(env_id, anchor_xy, tag_init, walk_scale, nlos_bias)
 
 
@@ -52,15 +52,21 @@ def _micro_params(condition_id: int) -> Tuple[float, float, float]:
     """Return (nlos_rate, nlos_strength, multipath_std) for a micro condition.
 
     Micro = blockage severity. NLOS event rate and NLOS bias magnitude
-    co-vary (more frequent -> stronger). Multipath std is held constant
-    across conds as a small thermal-noise floor (not a micro knob --
-    multipath reflection noise is hard to emulate and is not varied
-    here on purpose).
+    co-vary (more frequent -> stronger). Multipath std is a small
+    thermal-noise floor.
+
+    Rates follow the "person walking by" dynamic-noise regime:
+      cond 0: rare, mild  (3% NLOS, 0.3m bias) -- 1 anchor briefly
+      cond 1: occasional  (10% NLOS, 0.4m bias) -- 1 anchor sometimes
+      cond 2: frequent    (20% NLOS, 0.5m bias) -- 1 anchor often,
+                                                  2 anchors sometimes
+    These match the simple_baseline's gen_simple_synthetic.py scene
+    regime so the per-cond buckets across scripts are consistent.
     """
     table = {
-        0: (0.02, 0.3, 0.02),   # rare, mild blockages
-        1: (0.15, 0.8, 0.02),   # occasional, moderate
-        2: (0.40, 1.5, 0.02),   # frequent, strong
+        0: (0.03, 0.3, 0.02),   # rare, mild blockages
+        1: (0.10, 0.4, 0.02),   # occasional, moderate
+        2: (0.20, 0.5, 0.02),   # frequent, strong (still realistic)
     }
     return table[condition_id % 3]
 

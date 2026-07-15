@@ -341,7 +341,13 @@ def run_tier0_and_tier1_init(cfg: Config, train_items, all_items, device):
     ssl.train()
     for ep in range(cfg.ssl_epochs):
         total, n = 0.0, 0
-        for X, _, _, _, _ in loader:
+        for batch in loader:
+            # TensorUWB returns either 5-tuple (X, y, env, cond, nlos)
+            # or 6-tuple (X, y, env, cond, nlos, restore). Accept both.
+            if len(batch) == 6:
+                X = batch[0]
+            else:
+                X, _, _, _, _ = batch
             X = X.to(device)
             opt.zero_grad()
             x_pred, mask, _x = ssl(X)
@@ -411,15 +417,25 @@ def run_tier2(
     device: str,
     warmup_epochs: int = 5,
     ramp_epochs: int = 10,
+    log_every: int = 10,
+    model_kind: str = "downstream",
 ) -> tuple[DisentangledTrainer, list[dict]]:
     """Full adversarial training loop. Returns (trained_model, history)."""
 
-    model = DisentangledTrainer(cfg, n_envs=n_envs).to(device)
-    if maml_encoder_state is not None:
-        model.disent.encoder.load_state_dict(maml_encoder_state)
-        print("  Initialized encoder from MAML checkpoint.")
+    if model_kind == "attention":
+        model = AttentionDisentangledTrainer(cfg, n_envs=n_envs).to(device)
+        if maml_encoder_state is not None:
+            print("  WARNING: --tier1_ckpt is ignored for --model attention "
+                  "(transformer backbone is not compatible with the ASTA "
+                  "MAML encoder weights). Using random init.")
+        print("  Initialized AttentionDisentangledTrainer (random init).")
     else:
-        print("  WARNING: random encoder init (no MAML ckpt provided).")
+        model = DisentangledTrainer(cfg, n_envs=n_envs).to(device)
+        if maml_encoder_state is not None:
+            model.disent.encoder.load_state_dict(maml_encoder_state)
+            print("  Initialized encoder from MAML checkpoint.")
+        else:
+            print("  WARNING: random encoder init (no MAML ckpt provided).")
 
     # Two optimizers: one for the feature extractor, one for the adversary.
     # The gradient-reversal layer handles the sign on the adversary's gradient
@@ -466,10 +482,14 @@ def run_tier2(
         # `lam * adv_ce` as a *negative* term in the task loss.
         model.train()
         total_task, total_adv, total_nlos, total_cond, n = 0.0, 0.0, 0.0, 0.0, 0
-        for X, y, env, cond, nlos in train_loader:
+        for batch in train_loader:
+            # TensorUWB returns either 5-tuple or 6-tuple
+            if len(batch) == 6:
+                X, y, env, cond, nlos, _ = batch
+            else:
+                X, y, env, cond, nlos = batch
             X = X.to(device); y = y.to(device); env = env.to(device)
             cond = cond.to(device); nlos = nlos.to(device)
-            # ---- Two-optimizer pattern (clean version) ----
             # Pass 1 (featurizer): get c, pass it through adversary with
             # grad enabled (c NOT detached) so the GR layer inside the
             # model pushes c AWAY from being predictive of env. This is
@@ -480,7 +500,17 @@ def run_tier2(
             h_prime, c, adv_logits, loc, nlos_logits, cond_logits = model(
                 X, detach_c_for_adv=False
             )
-            task_loss = TF.mse_loss(loc, y)
+            # Synthetic y is (B, T, 2) (full random-walk trajectory).
+            # ASTA loc is (B, T, 2) (per-timestep); attention loc is
+            # (B, 2) (per-window from per-anchor head). Take y_mid
+            # for the loss, and for the ASTA model also take loc_mid.
+            T = X.size(1)
+            y_mid = y[:, T // 2, :]
+            if loc.dim() == 3:
+                loc_per_window = loc[:, T // 2, :]
+            else:
+                loc_per_window = loc
+            task_loss = TF.mse_loss(loc_per_window, y_mid)
             adv_ce = TF.cross_entropy(adv_logits, env)
             nlos_loss = TF.binary_cross_entropy_with_logits(
                 nlos_logits, nlos.float()
@@ -527,10 +557,21 @@ def run_tier2(
         val_task_total, val_n_total = 0.0, 0
         c_buf, env_buf = [], []
         with torch.no_grad():
-            for X, y, env, _cond, nlos in val_loader:
+            for batch in val_loader:
+                if len(batch) == 6:
+                    X, y, env, _cond, nlos, _ = batch
+                else:
+                    X, y, env, _cond, nlos = batch
                 X = X.to(device); y = y.to(device); env = env.to(device)
                 _h, c, _adv, loc, _nlos, _cond = model(X)
-                val_task_total += TF.mse_loss(loc, y, reduction="sum").item()
+                # y is (B, T, 2); take middle for the loss
+                T = X.size(1)
+                y_mid = y[:, T // 2, :]
+                if loc.dim() == 3:
+                    loc_per_window = loc[:, T // 2, :]
+                else:
+                    loc_per_window = loc
+                val_task_total += TF.mse_loss(loc_per_window, y_mid, reduction="sum").item()
                 val_n_total += X.size(0)
                 c_buf.append(c.cpu().numpy())
                 env_buf.append(env.cpu().numpy())
@@ -562,11 +603,14 @@ def run_tier2(
             "probe_chance": chance,
             "probe_n_envs": n_envs_in_probe,
         })
-        if (ep + 1) % max(1, cfg.finetune_epochs // 10) == 0 or ep == 0:
+        if (ep + 1) % log_every == 0 or ep == 0:
+            # Convert val_task (MSE in meters^2 since y is in meters
+            # and labels are 2D) to RMSE in meters for readability.
+            val_loc_rmse_m = float(np.sqrt(val_task))
             print(f"    [tier2] ep {ep+1:3d}/{cfg.finetune_epochs}  "
-                  f"lam={lam:.2f}  task={train_task:.3f}  adv={train_adv:.3f}  "
+                  f"lam={lam:.2f}  task={train_task:.4f}  adv={train_adv:.3f}  "
                   f"nlos={train_nlos:.3f}  cond={train_cond:.3f}  "
-                  f"val_task={val_task:.3f}  "
+                  f"val_loc_rmse_m={val_loc_rmse_m:.3f}  "
                   f"probe_env_acc={probe:.3f} (chance {chance:.3f}, "
                   f"{n_envs_in_probe} envs)")
     print(f"  tier-2 done in {time.time()-t0:.1f}s")
@@ -581,10 +625,22 @@ def eval_per_cond(model: DisentangledTrainer, val_items, device) -> dict:
     loader = DataLoader(TensorUWB(val_items), batch_size=64)
     errs_per_cond = {0: [], 1: [], 2: []}
     with torch.no_grad():
-        for X, y, _, cond, _ in loader:
+        for batch in loader:
+            if len(batch) == 6:
+                X, y, _, cond, _, _ = batch
+            else:
+                X, y, _, cond, _ = batch
             X, y = X.to(device), y.to(device)
             _h, _c, _adv, loc, _nlos, _cond = model(X)
-            err = torch.linalg.norm(loc - y, dim=-1).cpu().numpy()
+            # y is (B, T, 2); take middle. ASTA loc (B, T, 2) -> middle;
+            # attention loc (B, 2) -> as-is.
+            T = X.size(1)
+            y_mid = y[:, T // 2, :]
+            if loc.dim() == 3:
+                loc_per_window = loc[:, T // 2, :]
+            else:
+                loc_per_window = loc
+            err = torch.linalg.norm(loc_per_window - y_mid, dim=-1).cpu().numpy()
             for ci, e in zip(cond.tolist(), err):
                 errs_per_cond[ci].append(e)
     return {ci: float(np.mean(es)) if es else float("nan") for ci, es in errs_per_cond.items()}
@@ -603,8 +659,21 @@ def main():
     p.add_argument("--out", type=str, default="checkpoints/tier2_synthetic")
     p.add_argument("--warmup_epochs", type=int, default=5)
     p.add_argument("--ramp_epochs", type=int, default=10)
+    p.add_argument("--n_epochs", type=int, default=None,
+                   help="override cfg.finetune_epochs (default uses cfg)")
+    p.add_argument("--lr", type=float, default=None,
+                   help="override cfg.finetune_lr (default uses cfg)")
+    p.add_argument("--log_every", type=int, default=10,
+                   help="print loc error and other metrics every N epochs")
     p.add_argument("--nlos_loss_weight", type=float, default=0.5)
     p.add_argument("--cond_loss_weight", type=float, default=0.5)
+    p.add_argument("--model", default="downstream", choices=["downstream", "attention"],
+                   help="Which backbone to use. 'downstream' (default) = "
+                        "ASTAEncoder + LocationHeadPerTimestep. 'attention' "
+                        "= nn.TransformerEncoder + per-anchor pos head "
+                        "(matches the simple attention baseline that gave "
+                        "the best loc numbers). Random init for both, since "
+                        "tier2_synthetic does not load SSL/MAML ckpts.")
     p.add_argument("--run_baseline", action="store_true",
                    help="also train the no-Tier-2 baseline for the comparison viz")
     args = p.parse_args()
@@ -616,6 +685,10 @@ def main():
         cfg.finetune_epochs = 10
         args.warmup_epochs = 2
         args.ramp_epochs = 3
+    if args.n_epochs is not None:
+        cfg.finetune_epochs = args.n_epochs
+    if args.lr is not None:
+        cfg.finetune_lr = args.lr
     cfg.device = args.device
     cfg.seed = args.seed
     torch.manual_seed(cfg.seed)
@@ -659,6 +732,8 @@ def main():
         cfg, train_items, val_items, n_envs, maml_encoder_state, cfg.device,
         warmup_epochs=args.warmup_epochs,
         ramp_epochs=args.ramp_epochs,
+        log_every=args.log_every,
+        model_kind=args.model,
     )
     final_per_cond = eval_per_cond(model, val_items, cfg.device)
     print(f"  final per-cond loc error: {final_per_cond}")
