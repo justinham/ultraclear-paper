@@ -727,6 +727,40 @@ def main():
     cfg.nlos_loss_weight = args.nlos_loss_weight
     cfg.cond_loss_weight = args.cond_loss_weight
 
+    # ---- Tier 1 ckpt: load first to get the right cfg (n_channels, etc.) ----
+    maml_encoder_state = None
+    if args.tier1_ckpt and Path(args.tier1_ckpt).exists():
+        print(f"Loading MAML checkpoint from {args.tier1_ckpt}")
+        ck = torch.load(args.tier1_ckpt, map_location="cpu", weights_only=False)
+        # Match cfg to the saved ckpt (n_channels, d_model) so the
+        # encoder we build has the same shape as the MAML weights.
+        if "cfg" in ck:
+            for k, v in ck["cfg"].items():
+                if hasattr(cfg, k) and v is not None:
+                    setattr(cfg, k, v)
+            print(f"  [cfg] updated from ckpt: n_channels={cfg.n_channels}, "
+                  f"d_model={cfg.d_model}, seq_len={cfg.seq_len}")
+        # The tier 1 ckpt structure is a dict with key 'model_state'
+        # holding the full MAMLCore state_dict (encoder.* and head.*).
+        # Extract just the encoder weights, with the 'encoder.' prefix
+        # stripped (since DisentangledModel.encoder.load_state_dict
+        # expects bare keys).
+        if "model_state" in ck:
+            full_state = ck["model_state"]
+        elif "encoder" in ck:
+            full_state = ck["encoder"]
+        else:
+            full_state = ck
+        maml_encoder_state = {
+            k.removeprefix("encoder."): v
+            for k, v in full_state.items()
+            if k.startswith("encoder.")
+        }
+        if not maml_encoder_state:
+            print(f"  WARNING: no encoder.* keys found in {args.tier1_ckpt}; "
+                  f"the ckpt format may have changed. Falling back to random init.")
+            maml_encoder_state = None
+
     print(f"device={cfg.device}  seed={cfg.seed}")
     print("building synthetic data...")
     all_items = build_synthetic_dataset(cfg, seed=cfg.seed)
@@ -740,18 +774,8 @@ def main():
     print(f"  total: {len(all_items)}  train: {len(train_items)}  val: {len(val_items)}  "
           f"n_envs={n_envs}  train_envs={sorted(train_envs)}  val_envs={sorted(set(env_ids)-train_envs)}")
 
-    # ---- Tier 0 + Tier 1 init ----
-    if args.tier1_ckpt and Path(args.tier1_ckpt).exists():
-        print(f"Loading MAML checkpoint from {args.tier1_ckpt}")
-        ck = torch.load(args.tier1_ckpt, map_location="cpu")
-        maml_encoder_state = ck.get("encoder", ck) if isinstance(ck, dict) else ck
-        # In case it's a full MAMLCore state_dict, extract encoder only:
-        if any(k.startswith("encoder.") for k in maml_encoder_state.keys()):
-            maml_encoder_state = {
-                k[len("encoder."):]: v for k, v in maml_encoder_state.items()
-                if k.startswith("encoder.")
-            }
-    else:
+    # ---- Tier 0 + Tier 1 init (only if no tier1_ckpt) ----
+    if maml_encoder_state is None:
         print("No Tier 1 ckpt; running Tier 0 + Tier 1 from scratch...")
         maml = run_tier0_and_tier1_init(cfg, train_items, all_items, cfg.device)
         maml_encoder_state = maml.encoder.state_dict()
