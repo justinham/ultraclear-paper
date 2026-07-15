@@ -116,7 +116,12 @@ def main():
     p.add_argument("--batch_size", type=int, default=32)
     p.add_argument("--lr", type=float, default=1e-3)
     p.add_argument("--loc_weight", type=float, default=1.0)
-    p.add_argument("--restore_weight", type=float, default=1.0)
+    p.add_argument("--restore_weight", type=float, default=0.1,
+                   help="Weight on the restoration loss. Empirical note "
+                        "(2026-07-15 smoke test, 4 epochs): the default 1.0 "
+                        "hurts loc by ~1m because the gradient through the "
+                        "restored tensor fights the loc gradient. 0.0-0.1 "
+                        "is the sweet spot. Set to 0.0 for pure loc training.")
     p.add_argument("--nlos_weight", type=float, default=1.0)
     p.add_argument("--device", default="cpu")
     p.add_argument("--seed", type=int, default=0)
@@ -194,14 +199,11 @@ def main():
 
             # Build the 2-channel restore target the RestorationHead
             # expects (n_channels=2 to match SSL ckpt):
-            #   channel 0: gt_dist where LOS, measured ToA otherwise,
-            #              then z-scored to match X's normalization
+            #   channel 0: gt_dist where LOS, measured ToA otherwise
             #   channel 1: measured AoA (no clean AoA available, so
-            #              this is a trivial identity target — the
-            #              head learns to pass AoA through)
-            # Z-scoring the ToA target means the restore loss lives in
-            # the same units as the loc loss (normalized), so the two
-            # heads can train at comparable rates.
+            #              this is a trivial identity target)
+            # We z-score the ToA target so the restore loss lives in
+            # the same units as the loc loss (normalized).
             toa_meas = X[:, :, :, 0]                            # already z-scored
             aoa_meas = X[:, :, :, 1]                            # already z-scored
             restore_z = (restore - norm_mean[0]) / norm_std[0]  # z-score gt_dist
