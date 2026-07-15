@@ -204,6 +204,10 @@ def main():
     p.add_argument("--no_train", action="store_true",
                    help="skip FOMAML training; just run few-shot eval "
                         "(useful for debugging the eval pipeline)")
+    p.add_argument("--all_scenes", action="store_true",
+                   help="load all 20 grid2 scenes (default loads 6) so "
+                        "FOMAML can sample from a diverse env set. "
+                        "Required if you want to use train_scenes beyond 0-5.")
     p.add_argument("--n_eval_trials", type=int, default=30)
     args = p.parse_args()
 
@@ -217,7 +221,10 @@ def main():
     print(f"train scenes: {args.train_scenes}  val scenes: {args.val_scenes}")
     print()
     print("building multi-scene dataset...")
-    ds, scene_info = build_default_multi_scene(n_channels=2, seq_len=32, stride=32)
+    ds, scene_info = build_default_multi_scene(
+        n_channels=2, seq_len=32, stride=32,
+        all_scenes=args.all_scenes,
+    )
     print(f"\ntotal windows: {len(ds)}")
     # compute per-channel norm stats from train scenes only
     train_env_ids = set(args.train_scenes)

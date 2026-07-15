@@ -202,7 +202,7 @@ class MultiSceneSionnaDataset(Dataset):
         x = scene["feat"][g, s : s + self.seq_len]              # (T, M, F)
         if hasattr(self, "norm_mean"):
             x = (x - self.norm_mean) / self.norm_std
-        y = scene["tag_xy"][g, s + self.seq_len // 2]          # (2,)
+        y = scene["tag_xy"][g, s : s + self.seq_len]          # (T, 2) per-timestep
         c = int(scene["cond"][g, s + self.seq_len // 2])        # 0 or 1
         env_id = self.scene_info[s_idx].env_id
         T_, M_, _ = x.shape
@@ -218,23 +218,35 @@ class MultiSceneSionnaDataset(Dataset):
 
 def build_default_multi_scene(
     n_channels: int = 2, seq_len: int = 32, stride: int = 32,
+    all_scenes: bool = False,
 ):
     """Default scene list: pick a representative mix of LOS + NLOS scenes
     from the grid2 directory.
 
+    If all_scenes=True, load every *_A1A4swapped.csv in the grid2
+    directory (typically 20 scenes, with the missing-data scene env
+    14 included). This gives FOMAML the full env diversity for the
+    paper's main runs; the default 6-scene list is only useful for
+    quick smoke tests.
+
     Returns (dataset, scene_info). See build_multi_scene_dataset for
     the path-to-dataset logic; this function just supplies the CSVs.
     """
-    base = "/Users/justin/Downloads/srp_research/grid2"
-    scenes = [
-        "empty_open",                       # 100% LOS, the easy one
-        "custom_room_large",                # 100% LOS, smaller
-        "outdoor_blockages_pillars",        # 64% LOS, 14% NLOS, 21% no-paths
-        "indoor_blockages_pillars",         # 62% LOS, 5% NLOS, 33% no-paths
-        "outdoor_parking_01",               # 97% LOS
-        "indoor_garage_parking_01",         # 93% LOS
-    ]
-    paths = [f"{base}/sionna_uwb_grid_{s}_A1A4swapped.csv" for s in scenes]
-    print(f"Building multi-scene dataset with {len(scenes)} scenes:")
+    from pathlib import Path as _Path
+    base = _Path("/Users/justin/Downloads/srp_research/grid2")
+    if all_scenes:
+        paths = sorted(str(p) for p in base.glob("*_A1A4swapped.csv"))
+        print(f"Building multi-scene dataset with {len(paths)} scenes (all):")
+    else:
+        scenes = [
+            "empty_open",                       # 100% LOS, the easy one
+            "custom_room_large",                # 100% LOS, smaller
+            "outdoor_blockages_pillars",        # 64% LOS, 14% NLOS, 21% no-paths
+            "indoor_blockages_pillars",         # 62% LOS, 5% NLOS, 33% no-paths
+            "outdoor_parking_01",               # 97% LOS
+            "indoor_garage_parking_01",         # 93% LOS
+        ]
+        paths = [str(base / f"sionna_uwb_grid_{s}_A1A4swapped.csv") for s in scenes]
+        print(f"Building multi-scene dataset with {len(scenes)} scenes:")
     return build_multi_scene_dataset(paths, seq_len=seq_len, stride=stride,
                                       n_channels=n_channels)
