@@ -419,6 +419,7 @@ def run_tier2(
     ramp_epochs: int = 10,
     log_every: int = 10,
     model_kind: str = "downstream",
+    freeze_encoder: bool = False,
 ) -> tuple[DisentangledTrainer, list[dict]]:
     """Full adversarial training loop. Returns (trained_model, history)."""
 
@@ -437,18 +438,41 @@ def run_tier2(
         else:
             print("  WARNING: random encoder init (no MAML ckpt provided).")
 
+    # Freeze the encoder if requested. Only the FiLM, h_phi, heads,
+    # and adversary train; the MAML-pretrained features are preserved.
+    if freeze_encoder and model_kind == "downstream":
+        for p in model.disent.encoder.parameters():
+            p.requires_grad = False
+        n_frozen = sum(p.numel() for p in model.disent.encoder.parameters())
+        print(f"  --freeze_encoder: {n_frozen:,} encoder params frozen")
+    elif freeze_encoder and model_kind == "attention":
+        # Attention model: freeze the transformer backbone.
+        for p in model.transformer.parameters():
+            p.requires_grad = False
+        for p in model.input_embed.parameters():
+            p.requires_grad = False
+        # pos_encoder is a Parameter (not a Module), handle separately
+        model.pos_encoder.requires_grad = False
+        n_frozen = (
+            sum(p.numel() for p in model.transformer.parameters())
+            + sum(p.numel() for p in model.input_embed.parameters())
+            + model.pos_encoder.numel()
+        )
+        print(f"  --freeze_encoder: {n_frozen:,} attention backbone params frozen")
+
     # Two optimizers: one for the feature extractor, one for the adversary.
     # The gradient-reversal layer handles the sign on the adversary's gradient
     # for the feature-extractor side. The adversary's own optimizer sees
-    # adv_ce as a normal loss.
-    feat_params = (
-        list(model.disent.encoder.parameters())
-        + list(model.disent.h_phi.parameters())
-        + list(model.disent.film.parameters())
-        + list(model.loc_head.parameters())
-        + list(model.nlos_mlp.parameters())
-        + list(model.cond_head.parameters())
-    )
+    # adv_ce as a normal loss. Frozen params (encoder/backbone when
+    # --freeze_encoder is set) are excluded via filter(requires_grad).
+    # We use model.parameters() with requires_grad filter so this works
+    # for both the ASTA trainer (params under model.disent.*) and the
+    # attention trainer (params at the model root, e.g. model.transformer).
+    adv_param_set = set(id(p) for p in model.disent.adv.parameters())
+    feat_params = [
+        p for p in model.parameters()
+        if p.requires_grad and id(p) not in adv_param_set
+    ]
     adv_params = list(model.disent.adv.parameters())
     opt_feat = torch.optim.Adam(feat_params, lr=cfg.finetune_lr)
     opt_adv = torch.optim.Adam(adv_params, lr=cfg.adv_lr)
@@ -674,6 +698,12 @@ def main():
                         "(matches the simple attention baseline that gave "
                         "the best loc numbers). Random init for both, since "
                         "tier2_synthetic does not load SSL/MAML ckpts.")
+    p.add_argument("--freeze_encoder", action="store_true",
+                   help="Freeze the encoder/backbone after loading the "
+                        "tier1 ckpt. Only the FiLM, h_phi, heads, and "
+                        "adversary train. Useful for testing whether the "
+                        "MAML-pretrained features are good enough to "
+                        "freeze, or whether they still need to adapt.")
     p.add_argument("--run_baseline", action="store_true",
                    help="also train the no-Tier-2 baseline for the comparison viz")
     args = p.parse_args()
@@ -734,6 +764,7 @@ def main():
         ramp_epochs=args.ramp_epochs,
         log_every=args.log_every,
         model_kind=args.model,
+        freeze_encoder=args.freeze_encoder,
     )
     final_per_cond = eval_per_cond(model, val_items, cfg.device)
     print(f"  final per-cond loc error: {final_per_cond}")
