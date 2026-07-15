@@ -192,6 +192,7 @@ def main():
     for ep in range(args.n_epochs):
         model.train()
         sum_loc, sum_rest, sum_nlos, n = 0.0, 0.0, 0.0, 0
+        sum_loc_w, sum_rest_w, sum_nlos_w = 0.0, 0.0, 0.0
         for X, y, env, _c, nlos, restore in train_loader:
             X = X.to(args.device); y = y.to(args.device)
             env = env.to(args.device); nlos = nlos.to(args.device).float()
@@ -229,11 +230,18 @@ def main():
             sum_loc += loc_loss.item() * X.size(0)
             sum_rest += rest_loss.item() * X.size(0)
             sum_nlos += nlos_loss.item() * X.size(0)
+            # Weighted contributions (what the optimizer actually sees)
+            sum_loc_w += args.loc_weight * loc_loss.item() * X.size(0)
+            sum_rest_w += args.restore_weight * rest_loss.item() * X.size(0)
+            sum_nlos_w += args.nlos_weight * nlos_loss.item() * X.size(0)
             n += X.size(0)
 
         train_loc = sum_loc / n
         train_rest = sum_rest / n
         train_nlos = sum_nlos / n
+        train_loc_w = sum_loc_w / n
+        train_rest_w = sum_rest_w / n
+        train_nlos_w = sum_nlos_w / n
 
         # Validation: per-condition loc error (matching joint trainer)
         model.eval()
@@ -268,11 +276,13 @@ def main():
         overall = float(np.mean([v for v in per_cond.values() if not np.isnan(v)]))
         print(f"  ep {ep+1:3d}/{args.n_epochs}  "
               f"train loc={train_loc:.4f} rest={train_rest:.4f} nlos={train_nlos:.4f}  "
+              f"wloc={train_loc_w:.4f} wrest={train_rest_w:.4f} wnlos={train_nlos_w:.4f}  "
               f"val loc err: low={per_cond[0]:.3f}  mid={per_cond[1]:.3f}  high={per_cond[2]:.3f}  "
               f"avg={overall:.3f} m")
         history.append({
             "epoch": ep + 1,
             "train_loc": train_loc, "train_rest": train_rest, "train_nlos": train_nlos,
+            "train_loc_w": train_loc_w, "train_rest_w": train_rest_w, "train_nlos_w": train_nlos_w,
             **{f"val_loc_cond{ci}": v for ci, v in per_cond.items()},
             "val_loc_avg": overall,
         })
