@@ -156,7 +156,7 @@ def fomaml_train(
         if val_scene_env_ids and val_every > 0 and (ep + 1) % val_every == 0:
             core.eval()
             for eid in val_scene_env_ids:
-                trial_errs = []
+                trial_errs_m = []
                 for trial in range(val_trials):
                     sx, sy = sample_task_multi(ds, int(eid), val_k,
                                                 cfg.seed + 5000 + trial)
@@ -171,20 +171,33 @@ def fomaml_train(
                         inner_lr=cfg.maml_inner_lr,
                         inner_steps=cfg.maml_inner_steps,
                     )
-                    # q_loss is MSE in normalized xy units; convert to
-                    # meters via sqrt (since per-scene xy_std varies, we
-                    # just report the raw RMSE in normalized units for
-                    # now -- consistent with the printed query_loss).
-                    trial_errs.append(float(q_loss.sqrt().item()))
-                mean_err = float(np.mean(trial_errs))
+                    # q_pred and q_y are both in meters (the
+                    # MultiSceneSionnaDataset does not z-score the
+                    # tag_xy labels). RMSE = sqrt(MSE) = loc error
+                    # in meters, matching the supervised baseline's
+                    # val loc err convention.
+                    q_pred = info.get("q_pred")
+                    if q_pred is not None:
+                        T_q = qx.size(1)
+                        q_y_mid = qy[:, T_q // 2, :]
+                        # Per-sample Euclidean error in meters, then
+                        # mean over the query batch.
+                        per_sample_err = torch.linalg.norm(
+                            q_pred - q_y_mid, dim=-1
+                        ).cpu().numpy()
+                        trial_errs_m.append(float(per_sample_err.mean()))
+                if trial_errs_m:
+                    mean_err_m = float(np.mean(trial_errs_m))
+                else:
+                    mean_err_m = float("nan")
                 val_checkpoints.append({
                     "episode": ep + 1,
                     "k": val_k,
                     "env_id": int(eid),
-                    "loc_err_norm_rmse": mean_err,
+                    "loc_err_m": mean_err_m,
                 })
-            print(f"    [val] ep {ep+1:3d}  K={val_k}  per-env RMSE: " +
-                  ", ".join(f"env{v['env_id']}={v['loc_err_norm_rmse']:.3f}"
+            print(f"    [val] ep {ep+1:3d}  K={val_k}  per-env loc err (m): " +
+                  ", ".join(f"env{v['env_id']}={v['loc_err_m']:.3f}"
                             for v in val_checkpoints if v['episode'] == ep + 1))
             core.train()
     return losses, val_checkpoints
@@ -364,10 +377,13 @@ def main():
             w = _csv.writer(f)
             w.writerow(["episode", "phase", "k", "env_id", "value"])
             for i, v in enumerate(train_losses):
-                w.writerow([i + 1, "train_query_loss_norm", "", "", f"{v:.6f}"])
+                # q_loss is MSE in meters^2 (the MultiSceneSionnaDataset
+                # does not z-score tag_xy); sqrt(MSE) = RMSE = loc err
+                # in meters per FOMAML query batch.
+                w.writerow([i + 1, "train_loc_err_m_rmse", "", "", f"{v ** 0.5:.6f}"])
             for ck in val_checkpoints:
-                w.writerow([ck["episode"], "val_loc_err_norm_rmse",
-                            ck["k"], ck["env_id"], f"{ck['loc_err_norm_rmse']:.6f}"])
+                w.writerow([ck["episode"], "val_loc_err_m",
+                            ck["k"], ck["env_id"], f"{ck['loc_err_m']:.6f}"])
         print(f"history → {args.out_history}")
 
 
