@@ -12,7 +12,9 @@ Output per sample: a tensor of shape (T, M, F) where
   T  = sequence length (time steps)
   M  = number of anchors
   F  = number of channels (1 for ToA only, 2 for ToA + AoA)
-The y label is the 2D (x, y) tag position at the *center* timestep.
+The y label is the 2D (x, y) tag position at *each* timestep, i.e. the
+full (T, 2) trajectory. The model is a per-timestep location head that
+outputs (B, T, 2) — one (x, y) per timestep.
 We also expose env_id (macro) and condition_id (micro) for meta-learning.
 """
 from __future__ import annotations
@@ -47,11 +49,18 @@ def _make_random_env(rng: np.random.Generator, env_id: int, M: int) -> Synthetic
 
 
 def _micro_params(condition_id: int) -> Tuple[float, float, float]:
-    """Return (nlos_rate, nlos_strength, multipath_std) for a micro condition."""
+    """Return (nlos_rate, nlos_strength, multipath_std) for a micro condition.
+
+    Micro = blockage severity. NLOS event rate and NLOS bias magnitude
+    co-vary (more frequent -> stronger). Multipath std is held constant
+    across conds as a small thermal-noise floor (not a micro knob --
+    multipath reflection noise is hard to emulate and is not varied
+    here on purpose).
+    """
     table = {
-        0: (0.05, 0.5, 0.02),  # mostly LOS
-        1: (0.30, 1.0, 0.05),  # moderate
-        2: (0.60, 1.5, 0.10),  # heavy
+        0: (0.02, 0.3, 0.02),   # rare, mild blockages
+        1: (0.15, 0.8, 0.02),   # occasional, moderate
+        2: (0.40, 1.5, 0.02),   # frequent, strong
     }
     return table[condition_id % 3]
 
@@ -98,11 +107,14 @@ def simulate_trace(
     else:
         X = toa[..., None]
 
-    # label = position at the middle timestep
-    y = pos[T // 2]
+    # Per-timestep label = full trajectory (T, 2).
+    # The tag does a random walk of T steps, so each timestep has a
+    # different (x, y). The per-timestep location head outputs (B, T, 2)
+    # and is trained against this full trajectory.
+    y = pos.astype(np.float32)        # (T, 2)
     return (
         X.astype(np.float32),
-        y.astype(np.float32),
+        y,
         env.env_id,
         condition_id,
         nlos,                                # (T, M) bool
@@ -139,12 +151,17 @@ class TensorUWB(Dataset):
     def __init__(self, items):
         n = len(items)
         # Detect tuple arity
-        if items and len(items[0]) == 5:
+        if items and len(items[0]) == 6:
+            Xs, ys, es, cs, ns, rs = zip(*items)
+        elif items and len(items[0]) == 5:
             Xs, ys, es, cs, ns = zip(*items)
+            T, M = Xs[0].shape[:2]
+            rs = [np.zeros((T, M), dtype=np.float32) for _ in range(n)]
         elif items and len(items[0]) == 4:
             Xs, ys, es, cs = zip(*items)
             T, M = Xs[0].shape[:2]
             ns = [np.zeros((T, M), dtype=bool) for _ in range(n)]
+            rs = [np.zeros((T, M), dtype=np.float32) for _ in range(n)]
         else:
             raise ValueError(f"unexpected item tuple arity: {len(items[0])}")
         self.X = torch.from_numpy(np.stack(list(Xs))).float()
@@ -152,12 +169,14 @@ class TensorUWB(Dataset):
         self.env = torch.tensor(list(es), dtype=torch.long)
         self.cond = torch.tensor(list(cs), dtype=torch.long)
         self.nlos = torch.from_numpy(np.stack(list(ns))).bool()    # (N, T, M)
+        self.restore = torch.from_numpy(np.stack(list(rs))).float()  # (N, T, M)
 
     def __len__(self) -> int:
         return self.X.shape[0]
 
     def __getitem__(self, i: int):
-        return self.X[i], self.y[i], self.env[i], self.cond[i], self.nlos[i]
+        return (self.X[i], self.y[i], self.env[i], self.cond[i],
+                self.nlos[i], self.restore[i])
 
 
 def make_synthetic(cfg: Config, seed: int = 0) -> Tuple[List, List]:
