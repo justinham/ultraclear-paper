@@ -100,21 +100,32 @@ def sample_task_multi(
 def fomaml_train(
     core: MAMLCore,
     train_scene_env_ids: list[int],
+    val_scene_env_ids: list[int] | None,
     ds: MultiSceneSionnaDataset,
     cfg: Config,
     device: str,
     n_episodes: int,
     log_every: int = 5,
+    val_every: int = 0,
+    val_k: int = 10,
+    val_trials: int = 10,
 ) -> list[float]:
     """First-order MAML outer loop over multiple scenes.
 
     Each episode: sample N envs, build K-shot support and Q-query per
     env, run inner-loop adaptation, accumulate query loss, backprop
     into core's initialization.
+
+    If val_scene_env_ids is provided and val_every > 0, also runs a
+    few-shot eval on a small held-out set every `val_every` episodes
+    and returns (train_losses, val_checkpoints) where val_checkpoints
+    is a list of (ep, k, env_id, loc_err_m) tuples for the per-scene
+    loc error after adaptation.
     """
     opt = torch.optim.Adam(core.parameters(), lr=cfg.maml_outer_lr)
     rng = np.random.default_rng(cfg.seed)
     losses: list[float] = []
+    val_checkpoints: list[dict] = []
     t0 = time.time()
     for ep in range(n_episodes):
         opt.zero_grad()
@@ -141,7 +152,42 @@ def fomaml_train(
             print(f"  [maml] ep {ep+1:3d}/{n_episodes}  "
                   f"query_loss = {total_q.item():.4f}  "
                   f"({time.time()-t0:.1f}s)")
-    return losses
+        # Periodic val eval (on a fresh copy of core)
+        if val_scene_env_ids and val_every > 0 and (ep + 1) % val_every == 0:
+            core.eval()
+            for eid in val_scene_env_ids:
+                trial_errs = []
+                for trial in range(val_trials):
+                    sx, sy = sample_task_multi(ds, int(eid), val_k,
+                                                cfg.seed + 5000 + trial)
+                    qx, qy = sample_task_multi(ds, int(eid), cfg.q_query,
+                                                cfg.seed + 6000 + trial)
+                    sx, sy = sx.to(device), sy.to(device)
+                    qx, qy = qx.to(device), qy.to(device)
+                    adapted = MAMLCore(cfg).to(device)
+                    adapted.load_state_dict(core.state_dict())
+                    q_loss, info = adapt_and_evaluate(
+                        adapted, sx, sy, qx, qy,
+                        inner_lr=cfg.maml_inner_lr,
+                        inner_steps=cfg.maml_inner_steps,
+                    )
+                    # q_loss is MSE in normalized xy units; convert to
+                    # meters via sqrt (since per-scene xy_std varies, we
+                    # just report the raw RMSE in normalized units for
+                    # now -- consistent with the printed query_loss).
+                    trial_errs.append(float(q_loss.sqrt().item()))
+                mean_err = float(np.mean(trial_errs))
+                val_checkpoints.append({
+                    "episode": ep + 1,
+                    "k": val_k,
+                    "env_id": int(eid),
+                    "loc_err_norm_rmse": mean_err,
+                })
+            print(f"    [val] ep {ep+1:3d}  K={val_k}  per-env RMSE: " +
+                  ", ".join(f"env{v['env_id']}={v['loc_err_norm_rmse']:.3f}"
+                            for v in val_checkpoints if v['episode'] == ep + 1))
+            core.train()
+    return losses, val_checkpoints
 
 
 def few_shot_eval(
@@ -208,6 +254,17 @@ def main():
                    help="load all 20 grid2 scenes (default loads 6) so "
                         "FOMAML can sample from a diverse env set. "
                         "Required if you want to use train_scenes beyond 0-5.")
+    p.add_argument("--val_every", type=int, default=10,
+                   help="run few-shot val eval every N episodes during "
+                        "FOMAML training (0 = disabled, only at end).")
+    p.add_argument("--val_k", type=int, default=10,
+                   help="K-shot for the in-training val eval.")
+    p.add_argument("--val_trials", type=int, default=10,
+                   help="number of K-shot trials per val scene during "
+                        "in-training eval (kept small to limit overhead).")
+    p.add_argument("--out_history", default=None,
+                   help="if set, save per-episode FOMAML losses and "
+                        "per-checkpoint val loc errors to this CSV.")
     p.add_argument("--n_eval_trials", type=int, default=30)
     args = p.parse_args()
 
@@ -244,14 +301,18 @@ def main():
 
     # FOMAML training
     train_losses = []
+    val_checkpoints = []
     if not args.no_train:
         print("=" * 60)
         print("  Tier 1 FOMAML training")
         print("=" * 60)
-        train_losses = fomaml_train(
-            core, args.train_scenes, ds, cfg, args.device,
+        train_losses, val_checkpoints = fomaml_train(
+            core, args.train_scenes, args.val_scenes, ds, cfg, args.device,
             n_episodes=args.n_episodes,
             log_every=max(1, args.n_episodes // 10),
+            val_every=args.val_every,
+            val_k=args.val_k,
+            val_trials=args.val_trials,
         )
 
     # few-shot eval
@@ -284,6 +345,7 @@ def main():
         torch.save({
             "model_state": core.state_dict(),
             "train_losses": train_losses,
+            "val_checkpoints": val_checkpoints,
             "fs_results": fs_serial,
             "cfg": cfg.__dict__,
             "info": info,
@@ -294,6 +356,19 @@ def main():
             "n_episodes": args.n_episodes,
         }, out / "tier1_sionna.pt")
         print(f"\nsaved → {out / 'tier1_sionna.pt'}")
+
+    # save per-episode history as a flat CSV (long format, easy to plot)
+    if args.out_history:
+        import csv as _csv
+        with open(args.out_history, "w", newline="") as f:
+            w = _csv.writer(f)
+            w.writerow(["episode", "phase", "k", "env_id", "value"])
+            for i, v in enumerate(train_losses):
+                w.writerow([i + 1, "train_query_loss_norm", "", "", f"{v:.6f}"])
+            for ck in val_checkpoints:
+                w.writerow([ck["episode"], "val_loc_err_norm_rmse",
+                            ck["k"], ck["env_id"], f"{ck['loc_err_norm_rmse']:.6f}"])
+        print(f"history → {args.out_history}")
 
 
 if __name__ == "__main__":

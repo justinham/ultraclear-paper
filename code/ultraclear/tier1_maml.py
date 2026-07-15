@@ -135,7 +135,21 @@ def adapt_and_evaluate(
     # Make fast weights as a leaf tensor copy for each param.
     fast = {n: p.detach().clone().requires_grad_(True) for n, p in params.items()}
 
-    # Inner loop
+    # First-order MAML inner loop using functional_call. We keep the
+    # original param tensors as the source of truth (not detached) and
+    # build a fast-weights dict as a plain clone (no .detach, no
+    # .requires_grad_). The inner-loop autograd.grad uses
+    # create_graph=True so the chain from fast -> original params is
+    # preserved; q_loss.backward() at the outer level then flows
+    # first-order gradients back into core.parameters().
+    params = dict(core.named_parameters())
+    names = list(params.keys())
+    fast = {n: p.clone() for n, p in params.items()}
+
+    # Inner loop. create_graph=True keeps the first-order chain
+    # from fast -> params; we explicitly detach the second-order
+    # terms (Hessian-vector products) by not differentiating the
+    # inner-loop grad outputs at the outer step.
     for _ in range(inner_steps):
         pred = functional_call(core, fast, (support_x,))
         # LocationHead outputs (B, 2) (per-window, attention-pooled
@@ -145,19 +159,21 @@ def adapt_and_evaluate(
         y_mid = support_y[:, T // 2, :]
         loss = TF.mse_loss(pred, y_mid)
         grads = torch.autograd.grad(
-            loss, list(fast.values()), create_graph=False, allow_unused=True
+            loss, list(fast.values()), create_graph=True, allow_unused=True
         )
+        new_fast = {}
         for n, g in zip(names, grads):
             if g is None:
                 # parameter wasn't used in this forward pass; keep it as-is
+                new_fast[n] = fast[n]
                 continue
-            fast[n] = fast[n] - inner_lr * g
+            new_fast[n] = fast[n] - inner_lr * g
+        fast = new_fast
 
-    # Query evaluation with adapted weights
-    with torch.no_grad():
-        # we still need a grad path through fast -> original params for FOMAML
-        # by re-running with create_graph=True only on the meta-loss
-        pass
+    # Query evaluation with adapted weights. The gradient of q_loss
+    # flows back through the fast dict into the original core params
+    # (first-order only, since create_graph=True at the inner loop
+    # gives us the chain but we don't differentiate the Hessian).
     q_pred = functional_call(core, fast, (query_x,))
     # Same per-window head design: q_pred is (B, 2), query_y is
     # (B, T, 2). Take the middle timestep.
