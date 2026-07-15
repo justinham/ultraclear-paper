@@ -141,6 +141,11 @@ def main():
     p.add_argument("--out_csv_history", default=None)
     p.add_argument("--no_ssl_init", action="store_true",
                    help="Skip loading SSL weights (random encoder init)")
+    p.add_argument("--freeze_encoder", action="store_true",
+                   help="Freeze the encoder after loading SSL weights. Only "
+                        "the 3 heads train. Useful ablation to see how much "
+                        "of the SSL pretraining's value survives without "
+                        "fine-tuning.")
     p.add_argument("--n_channels", type=int, default=2,
                    help="1=ToA only, 2=ToA+AoA")
     p.add_argument("--train_envs", type=int, nargs="+", default=None,
@@ -197,7 +202,19 @@ def main():
     else:
         print("  --no_ssl_init: encoder randomly initialized")
 
-    opt = torch.optim.Adam(model.parameters(), lr=args.lr)
+    if args.freeze_encoder:
+        for p in model.encoder.parameters():
+            p.requires_grad = False
+        n_frozen = sum(p.numel() for p in model.encoder.parameters())
+        n_total = sum(p.numel() for p in model.parameters())
+        print(f"  --freeze_encoder: {n_frozen:,} encoder params frozen, "
+              f"training only {n_total - n_frozen:,} head params")
+    else:
+        n_total = sum(p.numel() for p in model.parameters())
+        print(f"  full model trainable: {n_total:,} params")
+
+    opt = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),
+                           lr=args.lr)
     bce = nn.BCEWithLogitsLoss()
 
     train_ds = TensorUWB(train_items)
