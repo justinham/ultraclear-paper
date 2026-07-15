@@ -804,28 +804,41 @@ def eval_per_cond(model: DisentangledTrainer, items: list, device: str,
     loader = DataLoader(TensorUWB(items), batch_size=64)
     errs_per_cond = {0: [], 1: [], 2: []}
     with torch.no_grad():
-        for X, y, env, cond, _ in loader:
+        for batch in loader:
+            # TensorUWB returns either 5-tuple (X, y, env, cond, nlos)
+            # or 6-tuple (X, y, env, cond, nlos, restore). Accept both.
+            if len(batch) == 6:
+                X, y, env, cond, _nlos, _restore = batch
+            else:
+                X, y, env, cond, _nlos = batch
             X = X.to(device); y = y.to(device); env = env.to(device)
             _h, _c, _adv, loc, _nlos, _cond = model(X)
+            # The ASTA model's loc is (B, T, 2) (per-timestep). The
+            # attention model's loc is (B, 2) (per-window from the
+            # middle-timestep per-anchor head). Normalize both to
+            # (B, 2) using y's middle timestep before computing err.
+            T = X.size(1)
+            if loc.dim() == 3:
+                loc_per_window = loc[:, T // 2, :]
+            else:
+                loc_per_window = loc
+            y_per_window = y[:, T // 2, :]
             # Denormalize predictions and labels if denorm_info given
             # (Sionna data is trained in per-scene-normalized space).
             if denorm_info is not None:
-                # denorm per-sample by env. With per-timestep labels, loc and y
-                # are (B, T, 2); the per-element broadcast still works.
-                loc_orig = torch.zeros_like(loc)
-                y_orig = torch.zeros_like(y)
+                loc_orig = torch.zeros_like(loc_per_window)
+                y_orig = torch.zeros_like(y_per_window)
                 for i in range(len(env)):
                     eid = int(env[i].item())
                     mean, std = denorm_info[eid]
-                    loc_orig[i] = loc[i] * torch.from_numpy(std).to(device) + torch.from_numpy(mean).to(device)
-                    y_orig[i] = y[i] * torch.from_numpy(std).to(device) + torch.from_numpy(mean).to(device)
-                loc, y = loc_orig, y_orig
-            # Per-timestep Euclidean error: (B, T, 2) -> (B, T). Mean
+                    loc_orig[i] = loc_per_window[i] * torch.from_numpy(std).to(device) + torch.from_numpy(mean).to(device)
+                    y_orig[i] = y_per_window[i] * torch.from_numpy(std).to(device) + torch.from_numpy(mean).to(device)
+                loc_per_window, y_per_window = loc_orig, y_orig
+            # Per-window Euclidean error: (B, 2) -> (B,)
             # over T to get one error per window, so the cond bucketing
             # sees a scalar per sample.
-            err = torch.linalg.norm(loc - y, dim=-1)        # (B, T)
-            err_per_window = err.mean(dim=-1).cpu().numpy() # (B,)
-            for ci, e in zip(cond.tolist(), err_per_window.tolist()):
+            err = torch.linalg.norm(loc_per_window - y_per_window, dim=-1).cpu().numpy()
+            for ci, e in zip(cond.tolist(), err.tolist()):
                 # cond_id == -1 means "no cond label" (real data, walking
                 # path, etc.). Skip those samples rather than crashing.
                 if ci < 0:
@@ -848,7 +861,11 @@ def eval_per_nlos_bucket(model: DisentangledTrainer, items: list, device: str,
     loader = DataLoader(TensorUWB(items), batch_size=64)
     errs_per_bucket = {0: [], 1: [], 2: []}   # low / mid / high NLOS
     with torch.no_grad():
-        for X, y, env, _cond, nlos in loader:
+        for batch in loader:
+            if len(batch) == 6:
+                X, y, env, _cond, nlos, _restore = batch
+            else:
+                X, y, env, _cond, nlos = batch
             X = X.to(device); y = y.to(device); env = env.to(device)
             _h, _c, _adv, loc, _nlos, _cond = model(X)
             if denorm_info is not None:
@@ -932,7 +949,11 @@ def run_baseline_for_joint(
     if use_nlos_buckets:
         errs_per_cond = {0: [], 1: [], 2: []}  # low / mid / high NLOS
         with torch.no_grad():
-            for X, y, env, _c, nlos in val_loader:
+            for batch in val_loader:
+                if len(batch) == 6:
+                    X, y, env, _c, nlos, _restore = batch
+                else:
+                    X, y, env, _c, nlos = batch
                 X = X.to(device); y = y.to(device); env = env.to(device)
                 pred = head(enc(X))
                 if denorm_info is not None:
@@ -956,7 +977,11 @@ def run_baseline_for_joint(
     else:
         errs_per_cond = {0: [], 1: [], 2: []}
         with torch.no_grad():
-            for X, y, _, c, _ in val_loader:
+            for batch in val_loader:
+                if len(batch) == 6:
+                    X, y, _, c, _, _restore = batch
+                else:
+                    X, y, _, c, _ = batch
                 X, y = X.to(device), y.to(device)
                 pred = head(enc(X))
                 err = torch.linalg.norm(pred - y, dim=-1).cpu().numpy()
