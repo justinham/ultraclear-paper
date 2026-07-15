@@ -46,6 +46,56 @@ class LocationHead(nn.Module):
         return self.mlp(pooled)                   # (B, 2)
 
 
+class LocationHeadPerTimestep(nn.Module):
+    """Per-timestep location head for moving-tag localization.
+
+    Input:  h of shape (B, T, M, d_model) — encoder output
+    Output: loc of shape (B, T, 2) — one (x, y) per timestep
+
+    The head pools over the M anchor dimension only (not over T) so
+    each timestep gets its own location prediction. The pooling is
+    a learnable attention-weighted average across the 4 anchors.
+
+    Why pool over M only (not T): the tag can be at a *different*
+    (x, y) at each timestep, so we must not blend information across
+    timesteps. Pooling only across M is the contract for a per-
+    timestep head.
+
+    For a stationary tag (every timestep has the same (x, y)), the
+    T outputs will all be (approximately) equal — the head will
+    learn to ignore the time axis. This is the head for
+    moving-tag setups where each timestep has a distinct label.
+    """
+
+    def __init__(self, d_model: int):
+        super().__init__()
+        # attention weights over the M anchors, shared across T
+        self.anchor_attn = nn.Linear(d_model, 1)
+        self.mlp = nn.Sequential(
+            nn.Linear(d_model, d_model),
+            nn.GELU(),
+            nn.Linear(d_model, 2),
+        )
+
+    def forward(self, h: torch.Tensor) -> torch.Tensor:
+        """h: (B, T, M, d_model) -> (B, T, 2) per-timestep location.
+
+        Per-timestep attention over M anchors:
+          a_t: (B, T, M) -- attention scores across anchors for each (b, t)
+          w_t: (B, T, M) -- softmax-normalized
+          pooled_t: (B, T, D) -- weighted average of h over M
+          loc: (B, T, 2) -- per-timestep (x, y)
+        """
+        B, T, M, D = h.shape
+        # attention across M (anchor dim) only, per (b, t)
+        a = self.anchor_attn(h).squeeze(-1)      # (B, T, M)
+        w = TF.softmax(a, dim=-1)                # (B, T, M) — sum to 1 over M
+        w = w.unsqueeze(-1)                      # (B, T, M, 1)
+        pooled = (h * w).sum(dim=2)              # (B, T, D) — sum over M
+        out = self.mlp(pooled)                   # (B, T, 2)
+        return out
+
+
 class MAMLCore(nn.Module):
     """Encoder + location head. This is what gets meta-learned."""
 
@@ -88,7 +138,12 @@ def adapt_and_evaluate(
     # Inner loop
     for _ in range(inner_steps):
         pred = functional_call(core, fast, (support_x,))
-        loss = TF.mse_loss(pred, support_y)
+        # LocationHead outputs (B, 2) (per-window, attention-pooled
+        # over T and M). support_y is (B, T, 2) (per-timestep from
+        # the Sionna dataset). Take the middle timestep to match.
+        T = support_x.size(1)
+        y_mid = support_y[:, T // 2, :]
+        loss = TF.mse_loss(pred, y_mid)
         grads = torch.autograd.grad(
             loss, list(fast.values()), create_graph=False, allow_unused=True
         )
@@ -104,7 +159,11 @@ def adapt_and_evaluate(
         # by re-running with create_graph=True only on the meta-loss
         pass
     q_pred = functional_call(core, fast, (query_x,))
-    q_loss = TF.mse_loss(q_pred, query_y)
+    # Same per-window head design: q_pred is (B, 2), query_y is
+    # (B, T, 2). Take the middle timestep.
+    T_q = query_x.size(1)
+    q_y_mid = query_y[:, T_q // 2, :]
+    q_loss = TF.mse_loss(q_pred, q_y_mid)
     return q_loss, {"q_pred": q_pred.detach()}
 
 
