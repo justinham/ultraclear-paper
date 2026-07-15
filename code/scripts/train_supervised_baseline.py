@@ -51,7 +51,8 @@ from scripts.sionna_joint_dataset import (
 from scripts.train_tier12_joint import TensorUWB
 
 
-def build_dataset(csv_dir: str, n_channels: int, seq_len: int):
+def build_dataset(csv_dir: str, n_channels: int, seq_len: int,
+                  train_set: set | None = None, val_set: set | None = None):
     csv_paths = sorted(str(p) for p in Path(csv_dir).glob("*_A1A4swapped.csv"))
     if not csv_paths:
         sys.exit(f"no CSVs in {csv_dir}")
@@ -59,12 +60,11 @@ def build_dataset(csv_dir: str, n_channels: int, seq_len: int):
         csv_paths=csv_paths, n_channels=n_channels, seq_len=seq_len, stride=seq_len,
     )
     env_ids = [info.env_id for info in scene_info]
-    # 80/20 by env, but always keep at least 1 val env (so we don't end
-    # up with val_items=0 on small datasets like the 10-scene simple
-    # synthetic).
-    n_val = max(1, len(env_ids) // 5)
-    train_set = set(env_ids[: len(env_ids) - n_val])
-    val_set = set(env_ids[len(env_ids) - n_val :]) - {14}
+    if train_set is None or val_set is None:
+        # Default 80/20 by env with at least 1 val env
+        n_val = max(1, len(env_ids) // 5)
+        train_set = set(env_ids[: len(env_ids) - n_val])
+        val_set = set(env_ids[len(env_ids) - n_val :]) - {14}
     train_items, val_items, scene_info, denorm_info = sionna_to_items_with_restore(
         ds, train_env_ids=train_set, val_env_ids=val_set,
     )
@@ -73,7 +73,7 @@ def build_dataset(csv_dir: str, n_channels: int, seq_len: int):
     train_items, val_items, scene_info, denorm_info = sionna_to_items_with_restore(
         ds, train_env_ids=train_set, val_env_ids=val_set,
     )
-    return train_items, val_items, scene_info, denorm_info, ds
+    return train_items, val_items, scene_info, denorm_info, ds, train_set, val_set
 
 
 def make_restore_target(batch_X, batch_nlos, denorm_info, env_ids, n_channels, ds):
@@ -143,6 +143,16 @@ def main():
                    help="Skip loading SSL weights (random encoder init)")
     p.add_argument("--n_channels", type=int, default=2,
                    help="1=ToA only, 2=ToA+AoA")
+    p.add_argument("--train_envs", type=int, nargs="+", default=None,
+                   help="Explicit list of env_ids to use for training. "
+                        "If unset, defaults to 80%% of the scenes by index.")
+    p.add_argument("--val_envs", type=int, nargs="+", default=None,
+                   help="Explicit list of env_ids to use for validation. "
+                        "If unset, defaults to 20%% of the scenes (minus "
+                        "env 14, the missing-data scene). For reproducible "
+                        "real-data runs use --train_envs 0..9 "
+                        "--val_envs 10..13 15..20 (i.e. first 10 train, "
+                        "the other 10 val).")
     args = p.parse_args()
 
     torch.manual_seed(args.seed)
@@ -153,10 +163,13 @@ def main():
     cfg.device = args.device
 
     print("building dataset...")
-    train_items, val_items, scene_info, denorm_info, ds = build_dataset(
+    train_items, val_items, scene_info, denorm_info, ds, train_set, val_set = build_dataset(
         args.csv_dir, n_channels=cfg.n_channels, seq_len=cfg.seq_len,
+        train_set=args.train_envs, val_set=args.val_envs,
     )
     n_envs = len(scene_info)
+    print(f"  train envs: {sorted(train_set)}")
+    print(f"  val envs:   {sorted(val_set)}")
     print(f"  n_envs={n_envs}  train_items={len(train_items)}  val_items={len(val_items)}")
 
     # Build model + SSL init
