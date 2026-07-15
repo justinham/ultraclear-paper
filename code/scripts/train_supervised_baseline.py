@@ -43,7 +43,7 @@ from torch.utils.data import DataLoader
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from ultraclear.config import Config
-from ultraclear.tier3_heads import DownstreamModel
+from ultraclear.tier3_heads import DownstreamModel, AttentionUWB
 from scripts.sionna_joint_dataset import (
     build_sionna_joint_dataset,
     sionna_to_items_with_restore,
@@ -141,6 +141,14 @@ def main():
     p.add_argument("--out_csv_history", default=None)
     p.add_argument("--no_ssl_init", action="store_true",
                    help="Skip loading SSL weights (random encoder init)")
+    p.add_argument("--model", default="downstream", choices=["downstream", "attention"],
+                   help="Which model to train. 'downstream' = the GCN+STA "
+                        "encoder with restoration/loc/nlos heads (Ultraclear "
+                        "Tier 3). 'attention' = a simple nn.TransformerEncoder "
+                        "with per-anchor heads and a flatten-anchors loc head, "
+                        "ported from srp_research/train_attention_baseline.py. "
+                        "Use 'attention' to reproduce the simpler baseline that "
+                        "historically gave much better loc numbers on this task.")
     p.add_argument("--freeze_encoder", action="store_true",
                    help="Freeze the encoder after loading SSL weights. Only "
                         "the 3 heads train. Useful ablation to see how much "
@@ -178,36 +186,52 @@ def main():
     print(f"  n_envs={n_envs}  train_items={len(train_items)}  val_items={len(val_items)}")
 
     # Build model + SSL init
-    model = DownstreamModel(cfg).to(args.device)
+    if args.model == "downstream":
+        model = DownstreamModel(cfg).to(args.device)
+    elif args.model == "attention":
+        model = AttentionUWB(cfg).to(args.device)
+    else:
+        sys.exit(f"unknown --model {args.model!r}, expected downstream|attention")
+    print(f"  using model: {args.model}")
     if not args.no_ssl_init:
-        ckpt = torch.load(args.ssl_ckpt, map_location=args.device, weights_only=False)
-        # The SSL ckpt is the bare encoder state_dict from SSLPretrainer
-        if "encoder_state" in ckpt:
-            enc_state = ckpt["encoder_state"]
-        elif "model_state" in ckpt:
-            enc_state = ckpt["model_state"]
+        if args.model == "attention":
+            print("  --model attention: SSL ckpt not used (architecture has "
+                  "no compatible encoder). Use --no_ssl_init or --model "
+                  "downstream for SSL-initialized runs.")
         else:
-            enc_state = ckpt
-        # The SSL ckpt's encoder keys carry the "encoder." prefix
-        # (because the trainer wraps ASTAEncoder as self.encoder);
-        # DownstreamModel's model.encoder.load_state_dict() expects
-        # the bare keys. Strip the prefix.
-        enc_state = {k.removeprefix("encoder."): v for k, v in enc_state.items()}
-        missing, unexpected = model.encoder.load_state_dict(enc_state, strict=False)
-        print(f"  loaded SSL encoder from {args.ssl_ckpt}")
-        if missing:
-            print(f"    missing keys: {missing[:5]}{'...' if len(missing) > 5 else ''}")
-        if unexpected:
-            print(f"    unexpected keys: {unexpected[:5]}{'...' if len(unexpected) > 5 else ''}")
+            ckpt = torch.load(args.ssl_ckpt, map_location=args.device, weights_only=False)
+            # The SSL ckpt is the bare encoder state_dict from SSLPretrainer
+            if "encoder_state" in ckpt:
+                enc_state = ckpt["encoder_state"]
+            elif "model_state" in ckpt:
+                enc_state = ckpt["model_state"]
+            else:
+                enc_state = ckpt
+            # The SSL ckpt's encoder keys carry the "encoder." prefix
+            # (because the trainer wraps ASTAEncoder as self.encoder);
+            # DownstreamModel's model.encoder.load_state_dict() expects
+            # the bare keys. Strip the prefix.
+            enc_state = {k.removeprefix("encoder."): v for k, v in enc_state.items()}
+            missing, unexpected = model.encoder.load_state_dict(enc_state, strict=False)
+            print(f"  loaded SSL encoder from {args.ssl_ckpt}")
+            if missing:
+                print(f"    missing keys: {missing[:5]}{'...' if len(missing) > 5 else ''}")
+            if unexpected:
+                print(f"    unexpected keys: {unexpected[:5]}{'...' if len(unexpected) > 5 else ''}")
     else:
         print("  --no_ssl_init: encoder randomly initialized")
 
     if args.freeze_encoder:
-        for p in model.encoder.parameters():
+        # For DownstreamModel, freeze the GCN+STA encoder. For
+        # AttentionUWB, freeze the transformer backbone.
+        backbone = getattr(model, "encoder", None) or getattr(model, "transformer", None)
+        if backbone is None:
+            sys.exit("--freeze_encoder not supported for this model class")
+        for p in backbone.parameters():
             p.requires_grad = False
-        n_frozen = sum(p.numel() for p in model.encoder.parameters())
+        n_frozen = sum(p.numel() for p in backbone.parameters())
         n_total = sum(p.numel() for p in model.parameters())
-        print(f"  --freeze_encoder: {n_frozen:,} encoder params frozen, "
+        print(f"  --freeze_encoder: {n_frozen:,} backbone params frozen, "
               f"training only {n_total - n_frozen:,} head params")
     else:
         n_total = sum(p.numel() for p in model.parameters())
