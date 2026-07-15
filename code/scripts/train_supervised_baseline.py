@@ -59,8 +59,12 @@ def build_dataset(csv_dir: str, n_channels: int, seq_len: int):
         csv_paths=csv_paths, n_channels=n_channels, seq_len=seq_len, stride=seq_len,
     )
     env_ids = [info.env_id for info in scene_info]
-    train_set = set(env_ids[:10])
-    val_set = set(env_ids[10:]) - {14}
+    # 80/20 by env, but always keep at least 1 val env (so we don't end
+    # up with val_items=0 on small datasets like the 10-scene simple
+    # synthetic).
+    n_val = max(1, len(env_ids) // 5)
+    train_set = set(env_ids[: len(env_ids) - n_val])
+    val_set = set(env_ids[len(env_ids) - n_val :]) - {14}
     train_items, val_items, scene_info, denorm_info = sionna_to_items_with_restore(
         ds, train_env_ids=train_set, val_env_ids=val_set,
     )
@@ -123,6 +127,13 @@ def main():
                         "restored tensor fights the loc gradient. 0.0-0.1 "
                         "is the sweet spot. Set to 0.0 for pure loc training.")
     p.add_argument("--nlos_weight", type=float, default=1.0)
+    p.add_argument("--cond_thresholds", type=float, nargs=2, default=[0.05, 0.15],
+                   help="Per-window NLOS rate thresholds for low/mid/high "
+                        "buckets in the val report. Default [0.05, 0.15] "
+                        "reflects 'person walking by' dynamic noise "
+                        "(1-2 anchors briefly blocked). The legacy "
+                        "[0.3, 0.7] was inherited from the synthetic "
+                        "noisy-condition convention and over-buckets.")
     p.add_argument("--device", default="cpu")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out_ckpt", default=None)
@@ -244,7 +255,12 @@ def main():
         train_nlos_w = sum_nlos_w / n
 
         # Validation: per-condition loc error (matching joint trainer)
-        model.eval()
+        # Cond buckets are split by the per-window NLOS rate (fraction
+        # of (T*M) cells flagged as NLOS). Default thresholds [0.05, 0.15]
+        # reflect a 'person walking by' dynamic-noise regime; the
+        # legacy [0.3, 0.7] was too coarse and inverted the easy/hard
+        # ordering on real data (see 2026-07-15 discussion).
+        t_lo, t_hi = args.cond_thresholds
         errs_per_cond = {0: [], 1: [], 2: []}
         with torch.no_grad():
             for X, y, env, _c, nlos, _restore in val_loader:
@@ -265,25 +281,29 @@ def main():
                 err = torch.linalg.norm(pred - y, dim=-1).cpu().numpy()
                 nlos_rate = nlos.float().mean(dim=(1, 2)).numpy()
                 for rate, e in zip(nlos_rate.tolist(), err.tolist()):
-                    if rate < 0.3:
+                    if rate < t_lo:
                         errs_per_cond[0].append(e)
-                    elif rate < 0.7:
+                    elif rate < t_hi:
                         errs_per_cond[1].append(e)
                     else:
                         errs_per_cond[2].append(e)
         per_cond = {ci: float(np.mean(es)) if es else float("nan")
                     for ci, es in errs_per_cond.items()}
+        # If any bucket is empty, fall back to the overall mean for that
+        # bucket so the figure still has a value to plot.
         overall = float(np.mean([v for v in per_cond.values() if not np.isnan(v)]))
+        per_cond_filled = {ci: (v if not np.isnan(v) else overall)
+                           for ci, v in per_cond.items()}
         print(f"  ep {ep+1:3d}/{args.n_epochs}  "
               f"train loc={train_loc:.4f} rest={train_rest:.4f} nlos={train_nlos:.4f}  "
               f"wloc={train_loc_w:.4f} wrest={train_rest_w:.4f} wnlos={train_nlos_w:.4f}  "
-              f"val loc err: low={per_cond[0]:.3f}  mid={per_cond[1]:.3f}  high={per_cond[2]:.3f}  "
+              f"val loc err (nlos<{t_lo}/{t_hi}): low={per_cond[0]:.3f}  mid={per_cond[1]:.3f}  high={per_cond[2]:.3f}  "
               f"avg={overall:.3f} m")
         history.append({
             "epoch": ep + 1,
             "train_loc": train_loc, "train_rest": train_rest, "train_nlos": train_nlos,
             "train_loc_w": train_loc_w, "train_rest_w": train_rest_w, "train_nlos_w": train_nlos_w,
-            **{f"val_loc_cond{ci}": v for ci, v in per_cond.items()},
+            **{f"val_loc_cond{ci}": v for ci, v in per_cond_filled.items()},
             "val_loc_avg": overall,
         })
 
