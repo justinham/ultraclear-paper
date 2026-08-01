@@ -628,12 +628,15 @@ def run_tier2(
             "probe_n_envs": n_envs_in_probe,
         })
         if (ep + 1) % log_every == 0 or ep == 0:
-            # Convert val_task (MSE in meters^2 since y is in meters
+            # Convert train_task (MSE in meters^2 since y is in meters
             # and labels are 2D) to RMSE in meters for readability.
+            # Both train and val loc errors are reported in meters so
+            # they can be compared directly.
+            train_loc_rmse_m = float(np.sqrt(train_task))
             val_loc_rmse_m = float(np.sqrt(val_task))
             print(f"    [tier2] ep {ep+1:3d}/{cfg.finetune_epochs}  "
-                  f"lam={lam:.2f}  task={train_task:.4f}  adv={train_adv:.3f}  "
-                  f"nlos={train_nlos:.3f}  cond={train_cond:.3f}  "
+                  f"lam={lam:.2f}  train_loc_rmse={train_loc_rmse_m:.3f}m  "
+                  f"adv={train_adv:.3f}  nlos={train_nlos:.3f}  cond={train_cond:.3f}  "
                   f"val_loc_rmse_m={val_loc_rmse_m:.3f}  "
                   f"probe_env_acc={probe:.3f} (chance {chance:.3f}, "
                   f"{n_envs_in_probe} envs)")
@@ -734,12 +737,21 @@ def main():
         ck = torch.load(args.tier1_ckpt, map_location="cpu", weights_only=False)
         # Match cfg to the saved ckpt (n_channels, d_model) so the
         # encoder we build has the same shape as the MAML weights.
+        # Only override *architecture* params; do NOT let the saved ckpt's
+        # training-loop params (finetune_epochs, finetune_lr, ssl_epochs,
+        # maml_episodes, etc.) clobber the CLI args for THIS run.
         if "cfg" in ck:
+            arch_keys = {
+                "n_channels", "d_model", "seq_len", "n_anchors",
+                "n_synthetic_envs", "n_micro_conditions", "samples_per_env",
+                "ssl_hidden", "adv_hidden", "micro_dim", "k_shot",
+            }
+            overridden = []
             for k, v in ck["cfg"].items():
-                if hasattr(cfg, k) and v is not None:
+                if k in arch_keys and hasattr(cfg, k) and v is not None:
                     setattr(cfg, k, v)
-            print(f"  [cfg] updated from ckpt: n_channels={cfg.n_channels}, "
-                  f"d_model={cfg.d_model}, seq_len={cfg.seq_len}")
+                    overridden.append(f"{k}={v}")
+            print(f"  [cfg] arch params from ckpt: {', '.join(overridden) if overridden else '(none)'}")
         # The tier 1 ckpt structure is a dict with key 'model_state'
         # holding the full MAMLCore state_dict (encoder.* and head.*).
         # Extract just the encoder weights, with the 'encoder.' prefix
@@ -764,10 +776,15 @@ def main():
     print(f"device={cfg.device}  seed={cfg.seed}")
     print("building synthetic data...")
     all_items = build_synthetic_dataset(cfg, seed=cfg.seed)
-    # 80/20 by env
+    # 10 train / 2 val: envs 0-9 train, 10-11 val (matches the Sionna
+    # 21-env protocol where train=[0,10), val=[10,12)). For other
+    # env counts, fall back to 80/20.
     env_ids = sorted({it[2] for it in all_items})
-    n_train_envs = max(1, int(0.8 * len(env_ids)))
-    train_envs = set(env_ids[:n_train_envs])
+    if len(env_ids) == 12:
+        train_envs = set(env_ids[:10])
+    else:
+        n_train_envs = max(1, int(0.8 * len(env_ids)))
+        train_envs = set(env_ids[:n_train_envs])
     train_items = [it for it in all_items if it[2] in train_envs]
     val_items = [it for it in all_items if it[2] not in train_envs]
     n_envs = len(env_ids)

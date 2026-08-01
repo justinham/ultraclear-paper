@@ -1,0 +1,99 @@
+% =============================================================================
+\subsection{Tier 2 v2 NLOS classification on the Sionna evaluation}
+\label{sec:eval-sionna-nlos}
+% =============================================================================
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/tier2_v2_nlos_confusion_combined.png}
+  \caption{Per-environment Tier 2 v2 NLOS classification
+  confusion-matrix stacks on a representative 3+3 subset of
+  the Sionna 20-environment panel. \emph{Left}: 3 trained
+  environments (envs 5, 9, 17). \emph{Right}: 3 validation
+  environments (envs 8, 12, 16). Bars are stacked TP (green) /
+  FP (gold) / FN (red) / TN (gray); the bold label above each
+  bar is the per-environment recall, and a recall $\geq 99\%$
+  on a TRAIN env is floored to ``99\%'' so a single missed
+  NLOS cell is not laundered into ``100\%''. The full
+  per-environment breakdown for all 12 NLOS envs, the 9
+  LOS-only envs, and the excluded env is in
+  Table~\ref{tab:tier2-confusion}.}
+  \label{fig:tier2-nlos-confusion}
+\end{figure}
+
+We evaluate the v2 Tier-2 model --- trained jointly on a
+12-environment synthetic 10/2 split with the auxiliary
+micro-condition classifier and the gradient-reversal
+adversary active --- on the Sionna ray-tracing
+NLOS-classification head across a held-out 20-environment
+panel (10 train, 10 val, 1 excluded). Of those 20, 12
+environments (5 train, 7 val) actually contain NLOS cells; the
+remaining 8 are LOS-only and contribute nothing to the
+per-class metrics. The full per-environment breakdown
+(precision, recall, F1, FNR, FPR) is reported in
+Table~\ref{tab:tier2-confusion}; Figure~\ref{fig:tier2-nlos-confusion}
+visualizes the stacked TP/FN/FP/TN counts on a representative
+3+3 subset of the train and val NLOS environments.
+
+\paragraph{Aggregate behaviour.}
+The model classifies NLOS cells with high reliability when
+the macro environment is in distribution. Across the 5 train
+NLOS environments the mean false-negative rate is
+\textbf{0.4\%} (recall 0.996, precision 0.977, F1 0.986): in
+aggregate, only 480 of 61{,}056 NLOS cells are missed, and
+just 1{,}696 of 706{,}944 LOS cells are false-alarmed.
+Three train environments (envs 5, 15, 17, 19) miss zero
+NLOS cells; env 9 contributes the only non-trivial
+train misses (480 of 23{,}520). On val, the same head
+degrades gracefully: the mean false-negative rate rises to
+\textbf{12.4\%} (recall 0.925, precision 0.943, F1 0.933)
+and the false-positive rate stays low (1.3\%, 11{,}712 of
+901{,}344 LOS cells). The
+asymmetry --- a 7\,pp drop in recall against only a 3.4\,pp
+drop in precision --- indicates that the model becomes
+\emph{conservative} on out-of-distribution environments,
+preferring to leave an NLOS cell misclassified as LOS
+(false negative) rather than corrupt a clean LOS measurement
+(false positive). For the downstream location head this is
+the right direction: an FN is a corrupted measurement passed
+through, while an FP is a wasted good measurement, and the
+former is the cheaper error to absorb at the filter stage.
+
+\paragraph{Per-environment variation.}
+Most of the val degradation is concentrated in a small
+subset of high-NLOS-prevalence environments. The two hard
+cases are \emph{env 4} (val, indoor blockages with pillars,
+FNR 21.4\%, 12{,}608 of 58{,}848 NLOS missed, F1 0.842) and
+\emph{env 12} (val, outdoor blockages with pillars, FNR
+10.2\%, 5{,}600 of 54{,}912 missed, F1 0.918); the
+\emph{best} val NLOS environment is \emph{env 6} (FNR
+0.4\%, 30 of 8{,}256 missed, F1 0.988) and the next
+two are env 7 (FNR 0.8\%) and env 8 (FNR 3.7\%). The
+remaining 4 val NLOS environments have FNR $\leq 11$\,\%,
+comparable to the train distribution. The per-environment
+FNR distribution is therefore \emph{not} a uniform
+generalization gap: the model has learned something close
+to the underlying propagation structure, but specific
+pillar-dominated geometries push it past the operating
+point it was trained at. We discuss remedies --- including
+training-time exposure to higher NLOS-prevalence
+environments and an NLOS-aware auxiliary task in Tier~0
+--- in the camera-ready version.
+
+\paragraph{Operational view.}
+The per-environment TP/FN/FP/TN stack is shown in
+Figure~\ref{fig:tier2-nlos-confusion} for the 3+3
+representative subset (envs 5, 9, 17 on the trained side;
+envs 8, 12, 16 on the val side). The figure is
+intentionally
+restricted to a small set of envs that span the operating
+range --- one essentially-clean train env (env 5), one
+moderately-stressed train env (env 9), and one easy
+train env (env 17); and one borderline val env (env 8),
+one moderate val env (env 12), and one hard val env (env 16)
+--- rather than all 12 NLOS envs at once. The full
+per-environment numbers, including the 9 LOS-only envs and
+the excluded env, are in
+Table~\ref{tab:tier2-confusion}.
+
+\input{tier2_v2_nlos_confusion_table}

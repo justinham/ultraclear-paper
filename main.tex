@@ -293,6 +293,9 @@ decomposed as $d = h d_h$.
 % =============================================================================
 \input{sections/tier3}
 
+\input{sections/eval_sionna}
+\input{sections/eval_realworld}
+
 % =============================================================================
 \section{Three-Tier Evaluation Protocol}
 \label{sec:eval}
@@ -320,13 +323,12 @@ physics of environment variation:
 \section{Experiments (camera-ready)}
 \label{sec:experiments}
 
-Full ablation tables, baseline comparisons (HSML~\cite{hsml2025},
-F-BERT~\cite{fbert2025}, ADCNN-BiLSTM-Transformer~\cite{adcnnbilstm2025},
-Transformer-WLS~\cite{transformerwls2025},
-RefLoc~\cite{refloc2024}), and the three-tier evaluation
-results on the Sionna ray-tracing~\cite{sionna2022} dataset
-and the OU best real-world trace will be reported in the
-camera-ready version.
+Loss-curves,
+adversary-probe, $c$-space t-SNE, FiLM modulation, and
+NLOS-reliability plots are in Section~\ref{sec:tier2} (the
+synthetic experiment). The v2 Sionna-trained NLOS
+classification results are reported in
+Section~\ref{sec:eval-sionna-nlos} below.
 
 % =============================================================================
 \section{Discussion}
@@ -346,11 +348,17 @@ composition would silently fail.
 Sionna provides ground-truth positions, anchor layouts, and
 labeled NLOS conditions, but the realism of the simulated
 multipath and material properties is bounded by the underlying
-ray-tracing model. The unseen-device test on a real UWB trace
-is the ultimate gate; the unseen-macro and seen-macro /
-unseen-micro tests on synthetic data are necessary but not
-sufficient. The full ablation table is reported in
-Section~\ref{sec:experiments} of the camera-ready version.
+ray-tracing model. \emph{Our simplified synthetic generator}
+in \texttt{ultraclear/data.py} models NLOS as per-(anchor, time)
+Bernoulli blockages with a positive ToA bias, but does not
+simulate multipath reflection noise as a micro-condition knob
+--- a small constant Gaussian noise floor is added for realism
+but is not varied across the three micro conditions. The
+unseen-device test on a real UWB trace is therefore the
+ultimate gate; the unseen-macro and seen-macro / unseen-micro
+tests on synthetic data are necessary but not sufficient. The
+full ablation table is reported in Section~\ref{sec:experiments}
+of the camera-ready version.
 
 % =============================================================================
 \section{Conclusion}

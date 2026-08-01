@@ -90,7 +90,7 @@ def main():
         for i in idx:
             X, _, _, _, _ = ds[int(i)]
             Xb = X.unsqueeze(0)
-            x_pred, mask = model(Xb)
+            x_pred, mask, _x = model(Xb)
             x_pred_np = x_pred.squeeze(0).squeeze(-1).numpy()  # (T, M)
             Xnp = X.squeeze(-1).numpy()                         # (T, M)
             mask_np = mask.squeeze(0).numpy()                   # (T, M)

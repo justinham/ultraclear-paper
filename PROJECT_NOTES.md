@@ -315,6 +315,14 @@ adversary capacity (2-layer MLP, d_c=32) and (ii) 50-epoch budget.
    text "Full ablation tables... will be reported in the
    camera-ready version"). Could be filled in with the few-shot
    table, transfer matrix, and per-NLOS breakdown.
+7. **LoRA for Tier 1/2 fine-tuning** (parked 2026-07-14).
+   Discussion only, no code written. Hypothesis: LoRA on the
+   location head's MLP would replace the FOMAML inner-loop
+   gradient step with a small set of trainable low-rank matrices
+   that adapt in 1 forward pass. Could fix the K=1 case where
+   FOMAML is currently the bottleneck (5.40 m² joint vs 0.64 m²
+   random at K=1 on 21-env Sionna). No LoRA references in code
+   as of 7/14 — verify before implementing.
 
 ---
 
@@ -332,7 +340,425 @@ pretrain would add ~5 minutes.
 
 ---
 
-## 8. Open questions for future Justin
+## 9. Hard-skip SSL head (2026-07-09, Justin's idea)
+The trained SSL encoder mangles visible cells: ToA RMSE 1.78m on
+visible cells vs 0.63m on masked. The encoder learns a
+*directional denoising* that improves masked cells at the cost of
+visible cells. Inference test: `code/scripts/test_tier0_inference.py`
+with `--no_skip` flag for side-by-side.
+
+**Fix:** hard skip-connection in `SSLHead`. At visible cells,
+output the raw input (`x_input`). At masked cells, output
+`MLP(encoder(x_masked))`. The encoder and head weights are
+unchanged (the loss is computed only on masked cells, so the
+gradients are the same); the skip is a pure inference-time
+change.
+
+**Side-by-side result on held-out parking scene:**
+
+| | v1 (no skip) | v2 (with skip) |
+|---|---:|---:|
+| ToA MASKED | 0.64 m | 0.64 m |
+| **ToA UNMASKED** | **1.78 m** | **0.00 m** |
+| AoA MASKED | 7.2° | 6.8° |
+| **AoA UNMASKED** | **55°** | **0.0°** |
+
+**Code changes:**
+- `code/ultraclear/tier0_ssl.py` — new `SSLHead.forward(h, x_input, mask)`
+  with `torch.where(mask.unsqueeze(-1), head(h), x_input)`.
+  `SSLPretrainer.forward` returns 3-tuple `(x_pred, mask, x_input)`.
+  All 7 call sites updated via bulk `sed`.
+- New ckpt: `code/checkpoints/tier0_multiscene_f2_3to1_skip_100ep/`.
+  Encoder and head are byte-identical to the old ckpt (verified
+  by SHA256); the skip doesn't change training, only inference.
+- `code/scripts/test_tier0_inference.py` — new inference test
+  with `--no_skip` flag for the old behavior.
+
+**Why this matters for the FOMAML problem:** the skip is what
+makes the encoder's output *useful* for downstream code that
+wants to read raw ToA values at visible cells. The next step
+is a **hybrid location head** that gets `[h, x_pred]` as input,
+where `x_pred` carries the passthrough measurements. The
+location head can use these without going through the encoder's
+denoising, which should help in low-K regimes.
+
+**Figures:**
+- `figures/tier0_ssl_head_skip_preview.png` — matplotlib preview
+  showing v1 (top, dashed/inactive skip) vs v2 (bottom, solid red
+  active skip) side-by-side. The merged cell detail at the start
+  of each panel shows the visible (blue) and masked (black) cells.
+- `figures/tier0_ssl_head_skip_diagram.png` — clean boxes-and-
+  arrows version, paper-quality.
+- `figures/tier0_ssl_head_skip.tex` — clean TikZ version (paper-ready)
+  with the same architecture in schematic form, plus a "what stays
+  the same" caption. Not pdflatex-compiled on this host.
+
+### 9.1 Joint trainer with the skip-connection Tier 0 init (2026-07-09)
+
+Added `--tier0_ckpt` flag to `train_tier12_joint.py`. Loads a raw
+SSL pretraining ckpt (just the encoder), updates cfg from the ckpt's
+saved config (so n_channels, channel_weights match), then runs Phase
+A MAML warmup with the encoder frozen. Saves a Phase A ckpt that
+the rest of the joint pipeline can consume.
+
+New function: `run_phase_A_from_tier0(cfg, ckpt_path, items, device,
+n_episodes)` — same contract as `run_phase_A` but skips the in-loop
+SSL pretraining.
+
+Smoke-tested `--quick` on full pipeline (A+B+C, 5+10+10 episodes)
+on Sionna data with the new skip ckpt as Phase A init. Per-NLOS-
+bucket val loc error: 8.4 / 3.6 / 2.5 m for low / mid / high NLOS.
+Quick run, not the headline number, but the pipeline is wired.
+
+Full-budget command (to run when Justin wants headline numbers):
+```bash
+cd code
+python3.11 -u -m scripts.train_tier12_joint \
+    --data sionna \
+    --tier0_ckpt checkpoints/tier0_multiscene_f2_3to1_100ep/tier0_multiscene_f2.pt \
+    --out checkpoints/joint_skip_init \
+    --phase_a_episodes 100 \
+    --phase_b_epochs 50 --phase_b_warmup 8 --phase_b_ramp 15 \
+    --phase_c_episodes 100 --phase_c_warmup 15 --phase_c_ramp 30 \
+    --run_baseline
+```
+
+**Caveat:** the skip-connection change is *inference-time only*
+(the encoder and head weights are byte-identical to the old ckpt).
+Tier 1 FOMAML at K=1 will give the same 18.41 m² as before unless
+downstream code reads `x_pred` (which carries the passthrough) and
+feeds it to a hybrid location head. The joint trainer currently
+feeds only `h` (encoder features) to the location head, so the
+skip doesn't help the location head today. **The full-budget run
+above is mainly a sanity check that the new init doesn't break
+anything; the real downstream improvement requires the hybrid
+location head (a separate change).**
+
+## 10. Per-timestep location head (2026-07-09, paper is moving-tag)
+
+The paper is for **moving-tag** localization, not stationary. The
+window of T=32 timesteps is a *trajectory* of the tag, and the
+location head should output (x, y) at every timestep, not a single
+(x, y) for the whole window.
+
+**Architecture change:** new `LocationHeadPerTimestep` class in
+`ultraclear/tier1_maml.py` and `scripts/train_tier2_synthetic.py`.
+Pools over the M anchor dim only (not over T), so each timestep
+gets its own prediction. Output shape: `(B, T, 2)` instead of
+`(B, 2)`. The 2-layer MLP is the same as the per-window head.
+
+**Data change:** all data loaders now return labels of shape
+`(T, 2)` (per-timestep trajectory) instead of `(2,)` (single
+location). Synthetic data's `simulate_trace` already had the full
+trajectory in `pos`; we just changed `y = pos[T // 2]` to
+`y = pos`. Sionna data is stationary per grid (all 100 trials at
+a given (grid_id) share the same (x, y)), so the per-timestep
+labels are constant across T — the head will learn to output the
+same value 32 times. For genuinely moving-tag data, see
+`/Users/justin/Downloads/srp_research/sionna_walking_path_v2.csv`
+(4001 timesteps with a moving tag, 1-2 m trajectory span).
+
+**Sliding window constraint (Justin):** the 32-trial sliding window
+must stay within a single (scene, grid_id). The current
+`SionnaJointDataset.from_per_scene` already does this:
+```python
+for s_idx, info in enumerate(scene_info):
+    for g in range(info.n_grids):
+        for s in range(0, info.n_trials - seq_len + 1, stride):
+            ds.windows.append((s_idx, g, s))
+```
+The `s` range never crosses a grid boundary, so all 32 timesteps
+in a window come from the same underlying (x, y). Verified by
+sampling 5 random windows and checking `s + seq_len <= n_trials`.
+
+**Loss shape:** `TF.mse_loss` is shape-flexible, so the same code
+`(B, T, 2)` vs `(B, T, 2)` works without modification. The mean
+is taken over all (B, T, 2) elements, which is the natural
+extension of the per-window MSE.
+
+**Eval fix:** the per-cond bucketing in `eval_per_cond` and
+`eval_per_nlos_bucket` originally computed
+`err = linalg.norm(loc - y, dim=-1)` which gives `(B, T)` for
+per-timestep outputs. The original code then did
+`for ci, e in zip(cond, err)` which would have appended a
+length-T array instead of a scalar per cond bucket. Fixed to
+average over T first: `err_per_window = err.mean(dim=-1)`
+gives `(B,)`, then bucketing works correctly. Per-cond CSV
+columns are now scalar values per cond bucket.
+
+**Smoke tests (--quick flag, 5+10+10 episodes):**
+- Synthetic data: A+B+C ran cleanly. Phase C per-cond val loc
+  err: 3.94 / 3.70 / 3.80 m for cond 0/1/2.
+- Sionna data (with --tier0_ckpt new skip init): A+B+C ran
+  cleanly. Phase C per-NLOS-bucket val loc err: 8.6 / 3.6 / 2.2 m
+  for low / mid / high NLOS.
+
+**Files changed:**
+- `ultraclear/tier1_maml.py` — added `LocationHeadPerTimestep`
+- `ultraclear/data.py` — `simulate_trace` returns `y = pos` (T, 2)
+- `scripts/train_tier2_synthetic.py` — added `LocationHeadPerTimestep`,
+  used it in `DisentangledTrainer.loc_head` and the baseline
+- `scripts/train_tier12_joint.py` — import + use the per-timestep head,
+  fixed per-cond eval to mean over T first
+- `scripts/sionna_joint_dataset.py` — return `tag_xy[g, s:s+seq_len]`
+  (T, 2) per-timestep labels
+- `scripts/multi_scene_dataset.py` — same change
+- `scripts/train_tier0_sionna.py` — same change
+- `scripts/train_tier0_sionna_f2.py` — same change
+
+### 10.1 Walking-path data loader (later 7/9, Justin's spec)
+
+Justin: "the walking path data is non-stationary and you won't find
+two same locations in 100 sequential samples. as long as it uses
+timestamp-wise location, it is fine."
+
+Added `scripts/walking_path_dataset.py` — a new data source for the
+joint trainer that loads
+`/Users/justin/Downloads/srp_research/sionna_walking_path_v2.csv`
+(4001 timesteps of moving-tag data, ToA + AoA + per-anchor NLOS).
+Per-timestep labels (T, 2). Sliding window of T=32 with no
+boundary constraints (the user's spec — the data is non-stationary
+so any consecutive 32-step window is a valid sample).
+
+**Env splitting:** the path is split into N roughly equal temporal
+chunks (default 4 via `--walking_path_n_envs`); each chunk is its
+own env for FOMAML task sampling. With 1 env, FOMAML degenerates.
+
+Wired into the joint trainer via `--data walking_path` (added to
+the data choices) and new CLI flags `--walking_path_csv` and
+`--walking_path_n_envs`.
+
+**Per-env characteristics (4-env split, smoke test):**
+- env 0: t=[0,1000), NLOS rate 76%, x std 1.3 m, y std 3.2 m
+- env 1: t=[1000,2000), NLOS rate 73%, x std 1.2 m, y std 3.2 m
+- env 2: t=[2000,3000), NLOS rate 55%, x std 2.3 m, y std 0.7 m
+- env 3: t=[3000,4001), NLOS rate 65%, x std 0.05 m, y std 5.6 m
+
+The per-env NLOS rates and tag_xy statistics differ substantially,
+giving FOMAML meaningful OOD test conditions.
+
+**Smoke test result (--quick, 5+10+10 episodes):**
+- Phase A: SSL encoder + 5 FOMAML episodes, query_loss ~0.22-0.30
+  (in z-score normalized space)
+- Phase B: task loss 1.55 → 0.03, nlos_loss 0.69 → 0.59
+- Phase C: per-NLOS-bucket val loc err: nan / 0.68 m / 1.26 m
+  (low / mid / high NLOS). 0 = nan because no low-NLOS samples in
+  the val split.
+
+**Eval routing:** `eval_for_data` routes walking_path to
+`eval_per_nlos_bucket` (same as sionna), since the cond_id is -1
+(no cond labels for real data). The per-cond CSV is renamed to
+per-NLOS-bucket in the printing.
+
+
+## 8. Micro-condition simplification (2026-07-08)
+
+Changed `ultraclear/data.py:_micro_params` so the micro condition
+varies only **NLOS blockage severity** (rate × strength), not
+multipath noise. Old table had all three co-varying (rate, strength,
+multipath std); new table holds multipath std constant as a small
+thermal-noise floor.
+
+New table:
+
+| cond_id | NLOS rate | NLOS strength | multipath std |
+|---:|---:|---:|---:|
+| 0 | 0.02 | 0.3 | 0.02 |
+| 1 | 0.15 | 0.8 | 0.02 |
+| 2 | 0.40 | 1.5 | 0.02 |
+
+Rationale (per Justin): multipath reflection noise is hard to
+emulate and conflates two physical phenomena (Bernoulli blockage
+vs wide-tailed noise). The simplified model has a single clean
+micro axis -- "how occluded is this anchor right now" -- which
+makes the disentanglement target sharper. Smoke-tested with
+`train_tier2_synthetic.py --quick --run_baseline`: per-cond NLOS
+rates match targets exactly (0.020 / 0.150 / 0.401 vs targets
+0.020 / 0.150 / 0.400) and bias magnitudes track the expected
+`nlos_strength × env.nlos_bias` (0.27 / 0.76 / 1.38 m observed
+vs 0.26 / 0.68 / 1.27 expected).
+
+What this enables:
+- Per-cond NLOS prediction reliability is now a clean monotonic
+  check (predicted NLOS rate should track ground-truth rate
+  0.02 / 0.15 / 0.40 per anchor per cond).
+- `c` should learn a single noise-level axis rather than a
+  confound between env layout and noise distribution.
+- The synthetic-to-real transfer story is more honest: we
+  explicitly do not simulate multipath; the model is expected
+  to be robust to that as an unmodeled residual at deployment.
+
+End-to-end smoke run (10 epochs, --quick): Tier 2 vs baseline
+per-cond loc err on val = 3.68/3.47/3.45 vs 3.84/3.69/3.76 m.
+Linear probe `c -> env` mostly at chance (0.49-0.55) with one
+bad epoch during the warmup->ramp transition. 10 epochs is too
+short for the schedule to stabilize; a 50-epoch rerun is the
+next step.
+
+## 8.2 DAE-style full-reconstruction loss (ablation, 2026-07-08)
+
+Tried adding the visible (unmasked) cells to the SSL loss in addition
+to the masked cells, with a `--visible_weight` scaling factor. The
+hypothesis was that forcing the model to denoise the visible cells
+(DAE-style) would also force it to use the visible context for the
+masked cells.
+
+**Result: it doesn't help, and at high weights it hurts.**
+
+| Setting | RMSE | Bias | Shrink slope | R^2 |
+|---|---:|---:|---:|---:|
+| Original (masked-only) | 0.297 | -0.126 | -0.0009 | 0.976 |
+| DAE visible_weight=0.3 | 0.86 | -0.65 | 0.043 | 0.797 |
+| DAE visible_weight=0.05 | 0.56 | -0.44 | 0.004 | 0.914 |
+| DAE visible_weight=0.01 | 0.30 | -0.08 | 0.005 | -- |
+
+At visible_weight=0.01 (effectively masked-only) we recover the
+baseline. The shrink slope stays at ~0 throughout, meaning the
+model still isn't using the visible cells to predict the masked
+cells -- the visible loss term just makes the model worse at the
+masked task.
+
+**Why this didn't work:** the per-(grid, anchor) mean is so easy to
+predict that the model has no incentive to use the visible cells
+for masked prediction. Adding a second task (denoise the visible
+cells) just makes the model worse at both, because it has to
+predict per-cell random-walk deviations (visible term) on top of
+the easy mean (masked term).
+
+**Code change is kept** (`--loss_on_visible` / `--visible_weight`
+flags in `train_tier0_sionna.py` and `train_tier0_sionna_f2.py`,
+plus the matching config fields in `Config` and the matching logic
+in `ssl_loss`). It's not the default, but it's there if we ever
+want to revisit.
+
+**Better alternatives to try next** (parked for a future session):
+1. **Block masking** -- mask an entire (anchor, all T) so the model
+   can't fall back on the per-(grid, anchor) mean for that anchor.
+   Forces cross-anchor context use.
+2. **Per-window random offset** -- add a small random offset to the
+   per-(grid, anchor) mean at training time, so the model can't
+   just memorize the mean.
+3. **Auxiliary tasks** -- add a second head that predicts, e.g.,
+   the per-window mean-deviation (which is 0 by construction) or
+   the random-walk velocity (which requires temporal context).
+
+**Why this isn't a paper blocker:** the current F=1 RMSE 0.30 m is
+fine for downstream use. The "model isn't using context" is a real
+characteristic but not blocking the joint trainer story. The joint
+trainer builds on top of this encoder, and the F=1 reconstruction
+quality is good enough that downstream MAML/FOMAML can still work.
+
+## 8.1 Tier 1+2 joint trainer (2026-07-08)
+
+New script: `code/scripts/train_tier12_joint.py` -- the combined
+macro (Tier 1) + micro (Tier 2) training pipeline, with three
+staged-unfreeze phases:
+
+- **Phase A** (SSL + MAML warmup): pretrain SSL encoder from
+  scratch, then run a small number of FOMAML episodes with the
+  encoder FROZEN. Calibrates the location head.
+- **Phase B** (disentangle, encoder frozen): build the full
+  DisentangledTrainer on top of the Phase A encoder. Train
+  h_phi + FiLM + heads + adversary with the full disentanglement
+  loss and a curriculum on lam (warmup -> ramp -> 1.0). Encoder
+  is frozen.
+- **Phase C** (joint FOMAML + disentangle, encoder unfrozen):
+  unfreeze the encoder. Each episode is MAML inner loop (loc
+  head + encoder adapted per env) + disentangle forward pass
+  on the query set + two-optimizer step. Curriculum on lam
+  (warmup_episodes -> ramp_episodes -> 1.0).
+
+Each phase produces its own checkpoint. The script supports
+resuming at any phase via `--phase A|B|C|AB|ABC` and
+`--phase_a_ckpt` / `--phase_b_ckpt`.
+
+**Why staged unfreeze (not naive joint):** the three loss
+components have different scales (task MSE in m^2, adv CE in
+nats, nlos BCE in bits) and the disentanglement adversary
+needs the encoder to be a stable target. Naively summing
+them with a single optimizer gives adversarial oscillation
+and head-vs-encoder tug of war. Staged unfreeze lets the
+modules learn their roles in order: SSL first, then heads
+on top, then joint finetune with a curriculum.
+
+**Smoke-tested** with `--quick`: full A->B->C in ~12s on
+CPU. Per-cond val loc err at 10 phase-C episodes is roughly
+flat across conds (4.17/3.95/3.86 m for cond 0/1/2), no
+catastrophic failure. Linear probe `c -> env` ranges 0.18-0.45
+during the joint phase (well below 0.5-0.94 of standalone
+Tier 2 at the same budget), suggesting the joint training
+produces a more macro-invariant `c`.
+
+**Status**: pipeline runs end-to-end. Full-budget (50+ phase-C
+episodes) results not yet collected -- this is the next step.
+
+### 8.1.2 Adv loss scaling fix (2026-07-08)
+
+The joint trainer's adversarial loss was exploding on real data
+with 21+ envs (adv_ce reaching 50-280 vs ~2 chance on synthetic
+8-env). The cause: the disentanglement term was `+ lam * adv_ce`,
+which scales linearly with the number of envs (adv_ce can grow
+unboundedly when the featurizer wins so hard the adversary can't
+predict above chance).
+
+**Fix applied** (DANN standard practice): cap the disentanglement
+term at `2 * ln(n_envs)`. The featurizer now only feels pressure
+when the adversary is performing above 2× chance.
+
+```python
+adv_chance = math.log(n_envs)
+adv_term = torch.clamp(adv_ce - 2.0 * adv_chance, min=0.0)
+feat_loss = ... + lam * adv_term   # instead of + lam * adv_ce
+```
+
+Applied in both Phase B (line 337) and Phase C (line 503) of
+`train_tier12_joint.py`. The fix is in place but has not yet been
+re-evaluated on real data -- next joint trainer run will show
+whether the cap fixes the location-head destabilization.
+
+### 8.1.1 Joint viz scripts (2026-07-08)
+
+The 6 existing Tier 2 viz scripts have a `--joint` flag added that
+points them at `checkpoints/joint/phase_C.pt` and writes to
+`figures/joint/`. A shared helper `scripts/viz_tier2_helpers.py`
+provides `load_model_from_ckpt`, `load_history_csv` (handles both
+standalone and joint CSV formats with different column names), and
+`add_joint_flag` / `resolve_paths`.
+
+Three new viz scripts added for the joint trainer:
+
+- `viz_joint_phases.py` -- 3-panel figure showing all three phases'
+  loss trajectories (Phase A placeholder, Phase B with frozen
+  encoder, Phase C with encoder unfrozen) with the lambda curriculum
+  overlaid on each phase.
+- `viz_joint_probe.py` -- disentanglement diagnostic with curriculum.
+  Two panels: probe_env_acc over episodes + lambda schedule. The
+  curriculum transitions are marked with vertical dotted lines.
+- `viz_tier2_loc_comparison --joint` -- 2-way bar chart
+  comparing baseline (no Tier 2) vs joint Tier 1+2 per-cond
+  location error on val. Reads `phase_C_per_cond.csv` (which
+  contains both columns when `--run_baseline` is passed).
+  The standalone Tier 2 is intentionally NOT shown in the
+  headline figure -- it's a surprise negative result
+  (worse than baseline) and doesn't belong alongside
+  the joint comparison.
+
+The joint trainer also got:
+- `--run_baseline` flag that trains a no-Tier-2 baseline and
+  merges its per-cond errors into `phase_C_per_cond.csv` (in the
+  same column format the standalone script uses).
+- `n_envs` field added to all three phase checkpoints so the
+  model-loading scripts can construct `DisentangledTrainer`
+  with the right `n_envs`.
+
+Smoke-tested: all 9 viz scripts (6 existing + 3 new) run on the
+joint trainer's output. Outputs at `/tmp/joint_v3_figs/` for a
+quick run: 7 figures, all rendered without errors.
+
+Next: full-budget joint run (50+ phase-C episodes) and 3-way
+comparison with multi-seed (currently n=1).
+
+## 9. Open questions for future Justin
 
 - Should the Tier 0 SSL loss weight the per-(T, M) error by the
   fraction of visible cells? Currently MSE is uniform over masked

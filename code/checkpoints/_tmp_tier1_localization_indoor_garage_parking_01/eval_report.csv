@@ -1,0 +1,3 @@
+method,mae_x_m,mae_y_m,mae_norm_m,max_m,n_test
+tier1_encoder+reg_head,0.0521,0.0350,0.0689,0.2188,240
+lse3_4anchor,0.3042,0.2450,0.4300,1.5307,240

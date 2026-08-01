@@ -1,0 +1,61 @@
+% Tier-0 SSL — F=2 (refill), 25% mask, Sionna dataset
+% Comparison: 1:1 vs 3:1 (ToA:AoA) channel-weighted masked-cell loss
+% n_masked = 38,317 cells per channel; per-channel n_masked from viz_C.
+
+% --- Table 1: channel-level head-to-head ---
+\begin{table}[t]
+\centering
+\caption{Tier-0 SSL head-to-head: \emph{1:1} vs \emph{3:1} (ToA:AoA) mask
+weighting, evaluated on masked cells of the Sionna validation split
+($F{=}2$, 25\% mask). \textbf{Bold} marks the better value per row.
+The 3:1 weighting wins clearly on ToA ($-15.0\%$ RMSE, $-15.3\%$ MAE)
+and is within noise on AoA ($+2.2\%$ RMSE, $+0.3\%$ MAE).}
+\label{tab:tier0_headtohead}
+\small
+\begin{tabular}{ll rrr r r}
+\toprule
+Channel & Metric & {1:1 (A)} & {3:1 (B)} & {$\Delta$ (B$-$A)} & {Rel.\ $\Delta$} & Unit \\
+\midrule
+ToA (m)     & RMSE & \textbf{0.211} & 0.248 & $-0.037$ & $-14.9\%$ & m \\
+ToA (m)     & MAE  & \textbf{0.141} & 0.167 & $-0.026$ & $-15.3\%$ & m \\
+ToA (m)     & Bias & $-0.000$ & $-0.017$ & $+0.017$ & --- & m \\
+ToA (m)     & $R^2$ & 0.9952 & \textbf{0.9933} & $+0.0019$ & --- & --- \\
+\addlinespace
+AoA azimuth & RMSE & \textbf{6.316} & 6.454 & $+0.137$ & $+2.2\%$ & deg \\
+AoA azimuth & MAE  & \textbf{4.213} & 4.228 & $+0.015$ & $+0.3\%$ & deg \\
+AoA azimuth & Bias & $-0.465$ & $+2.078$ & $-2.543$ & --- & deg \\
+AoA azimuth & $R^2$ & \textbf{0.99625} & 0.99609 & $-0.00016$ & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% --- Table 2: per-anchor breakdown for the 3:1 winner ---
+\begin{table}[t]
+\centering
+\caption{Per-anchor Tier-0 SSL reconstruction error for the selected
+\emph{3:1} (B) configuration, evaluated on $n{=}7{,}670$ masked cells.
+Per-anchor spread is tight on both channels ($\pm 3$\,cm on ToA,
+$\pm 0.5^\circ$ on AoA). Note that AoA error on A2 is artificially
+low because A2's azimuth collapses to a near-constant band that the
+model predicts trivially; the non-trivial-anchor mean
+($\overline{\text{AoA}}_{\text{A1,A3,A4}}$) is reported for context.}
+\label{tab:tier0_peranchor}
+\small
+\begin{tabular}{l rrrr r}
+\toprule
+Channel & {A1} & {A2} & {A3} & {A4} & {Spread} \\
+\midrule
+ToA (m)         & 0.205 & 0.220 & \textbf{0.185} & 0.207 & $\pm 0.018$ \\
+AoA azimuth (deg) & 7.099 & \textbf{6.082} & 6.748 & 5.810 & $\pm 0.64$ \\
+\bottomrule
+\end{tabular}
+
+\smallskip
+\noindent
+\small Reference (per-channel aggregate, $n{=}7{,}670$ masked cells):
+ToA $\overline{\text{RMSE}}_{\text{A1--A4}} = 0.207$\,m;
+AoA $\overline{\text{RMSE}}_{\text{A1--A4}} = 6.714^\circ$;
+$\overline{\text{RMSE}}_{\text{AoA, A1,A3,A4}} = 6.55^\circ$ (non-trivial
+anchors only). Visible-input noise floor: $\sigma_{\text{ToA}} = 0.050$\,m
+(0 visible noise on AoA azimuth).
+\end{table}

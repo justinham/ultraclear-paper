@@ -1,0 +1,3 @@
+env_id,is_trained,n_windows,loc_rmse_m,loc_mae_m,loc_median_m,loc_p90_m
+0,1,1200,3.2190,3.0177,3.1207,4.3578
+11,0,1200,3.9161,3.6518,3.7322,5.4550

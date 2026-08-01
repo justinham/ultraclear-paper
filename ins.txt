@@ -1,0 +1,107 @@
+0. weight contribution update
+1. ssl --> tier1 MAML --> tier2 (phase 1, freeze encoder 20ep, then phase 2 joint train 80 ep with lower rate for encoder)
+2. timestampe wise vs window wise
+
+
+baseline (no MAML no film but with minor dyn condition, refined attention head)
+python3.11 -m scripts.train_supervised_baseline \
+    --csv_dir /tmp/simple_synth \
+    --model downstream \
+    --ssl_ckpt checkpoints/tier0_multiscene_f2_3to1_skip_100ep/tier0_multiscene_f2.pt \
+    --n_epochs 50 --batch_size 64 --lr 5e-4 --restore_weight 0.1 \
+    --cond_thresholds 0.05 0.15 \
+    --out_ckpt checkpoints/baseline_ds_simple_50ep.pt \
+    --out_csv_history figures/baseline_ds_simple_50ep_history.csv --no_ssl_init
+
+--> checkpoints/tier0_multiscene_f2_3to1_skip_100ep/tier0_multiscene_f2.pt
+— SSL pretrain, no labels, 100 ep, scene 0-3 (the "tier 0" stage, f2 3:1 variant with skip head)
+
+tier1 MAML training
+python3.11 -m scripts.train_tier1_sionna \
+    --tier0_ckpt checkpoints/tier0_multiscene_f2_3to1_skip_100ep/tier0_multiscene_f2.pt \
+    --all_scenes \
+    --n_episodes 1000 \
+    --train_scenes 0 1 2 5 9 11 13 15 17 19 \
+    --val_scenes 3 4 6 7 8 10 12 16 18 20 \
+    --k_shots 1 5 10 \
+    --val_every 10 \
+    --val_k 10 \
+    --val_trials 10 \
+    --n_eval_trials 30 \
+    --device mps \
+    --out checkpoints/tier1_mixed.pt \
+    --out_history figures/tier1_maml_history.csv
+
+
+--> checkpoints/tier1_sionna_best.pt
+— FOMAML on top, 500 epochs, scenes 0-9 train / 10-20 val excl 14 (the "tier 1" stage)
+
+mixed env use for training
+-->checkpoints/tier1_mixed.pt/tier1_sionna.pt
+
+
+tier2 Film training
+python3.11 -m scripts.train_tier2_synthetic \
+    --model downstream \
+    --tier1_ckpt checkpoints/tier1_sionna_best.pt \
+    --freeze_encoder \
+    --n_epochs 500 \
+    --lr 5e-4 \
+    --warmup_epochs 10 \
+    --ramp_epochs 20 \
+    --nlos_loss_weight 0.1 \
+    --cond_loss_weight 0.5 \
+    --log_every 10 \
+    --out checkpoints/tier2_frozen_tier1
+
+
+## use this instead
+python3.11 -u -m scripts.train_tier2_sionna \
+  --tier1_ckpt checkpoints/tier1_sionna_best.pt \
+  --freeze_encoder \
+  --n_epochs 500 \
+  --lr 5e-4 \
+  --warmup_epochs 10 \
+  --ramp_epochs 20 \
+  --nlos_loss_weight 0.5 \
+  --cond_loss_weight 0.5 \
+  --device mps 
+
+--> checkpoints/tier2_frozen_tier1/tier2_synthetic.pt
+FiLM+adversary on top, 500 ep, encoder frozen 
+
+new mixed 
+--> checkpoints/tier2_frozen_tier1_mix/tier2_sionna.pt
+
+
+## try 16 scene training 4 validation
+python3.11 -u -m scripts.train_tier1_sionna \
+  --tier0_ckpt checkpoints/tier0_empty_open_f2_25pct_3to1_100ep.pt \
+  --all_scenes \
+  --train_scenes 0 1 2 4 5 6 7 9 10 11 12 14 15 16 17 19 \
+  --val_scenes 3 8 13 18 \
+  --n_way 8 \
+  --n_episodes 100 \
+  --val_every 10 \
+  --val_k 10 \
+  --val_trials 10 \
+  --n_eval_trials 30 \
+  --out checkpoints/tier1_sionna_16train_4val \
+  --out_history figures/tier1_16train_4val_history.csv
+  
+
+**The frozen encoder is the wall that prevents collapse.** The adversary's job is to make `c` uninformative about env, but it can only do that by pushing the h_phi + FiLM modules (since the encoder is locked). The location-relevant signal lives in the encoder features, untouched, so the location head keeps learning throughout. In the no-freeze run, the adversary could push the encoder itself toward a constant, killing location as a side effect.
+
+### What this tells us about Tier 2 FiLM (the parked item you asked to start with)
+
+1. **The FiLM+adversary pipeline can work** — train RMSE 0.34m and val 2.52m at peak are real, not trivial-solution artifacts. So FiLM *can* disentangle without collapsing the encoder, given the right regularization.
+
+2. **The frozen-encoder trick is doing a lot of heavy lifting** — without it, the same pipeline collapses. This is a structural concern for the joint tier1+2 trainer where the encoder is also being MAML-adapted. The progressive-unfreeze mechanism (7/15) might still be needed there.
+
+3. **The best val RMSE (2.52 m at ep 40) is achieved when probe_env_acc is 0.955** — i.e. when the disentanglement is *failing*. This is the 7/10 K-shot trap in disguise: the best OOD generalization happens *before* disentanglement is fully effective. The "sweet spot" is probably the ramp window (ep 15-40), not the fully-converged state.
+
+4. **The cond head and NLOS head are starving** — both have low weight (0.5 and 0.1 respectively) and both lose to the adversary. If you want either to work, the loss balance needs to change, or you need a different disentangle mechanism (e.g. conditional info bottleneck instead of pure adversary).
+
+5. **Ep 500 is worse than ep 40 for val** — train continues to improve (0.34 → 0.55 m RMSE) but val degrades (2.52 → 3.89 m). This is **OOD overfitting**: the model keeps squeezing the train set while the disentanglement pressure slowly corrupts the val-relevant features. **Stop at ep 40 next time, not 500.**
+
+### Open

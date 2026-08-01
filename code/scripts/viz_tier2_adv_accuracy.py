@@ -15,29 +15,45 @@ Usage:
 """
 from __future__ import annotations
 import argparse
-import csv
 from pathlib import Path
+import numpy as np
 import matplotlib.pyplot as plt
+
+from scripts.viz_tier2_helpers import load_history_csv, TIER2_CKPT, JOINT_C_CKPT, TIER2_FIG, JOINT_FIG
 
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--history", type=str, default="checkpoints/tier2_synthetic/tier2_history.csv")
-    p.add_argument("--out", type=str, default="figures/tier2_synthetic/adv_accuracy.png")
+    p.add_argument("--history", type=str, default=f"{TIER2_CKPT.rsplit('/', 1)[0]}/tier2_history.csv",
+                   help="standalone Tier 2 history CSV (default: tier2_synthetic/tier2_history.csv)")
+    p.add_argument("--joint_history", type=str, default=f"{JOINT_C_CKPT.rsplit('/', 1)[0]}/phase_C_history.csv",
+                   help="joint phase C history CSV (default: joint/phase_C_history.csv)")
+    p.add_argument("--out", type=str, default=f"{TIER2_FIG}/adv_accuracy.png")
+    p.add_argument("--joint", action="store_true",
+                   help="use joint phase C history instead of standalone Tier 2")
     args = p.parse_args()
 
-    rows = []
-    with open(args.history) as f:
-        for row in csv.DictReader(f):
-            for k, v in row.items():
-                try:
-                    row[k] = float(v)
-                except (ValueError, TypeError):
-                    pass
-            rows.append(row)
-    eps = [int(r["epoch"]) for r in rows]
+    if args.joint:
+        path = args.joint_history
+        if "tier2_synthetic" in args.out:
+            args.out = args.out.replace("tier2_synthetic", "joint")
+    else:
+        path = args.history
+
+    rows = load_history_csv(path, kind="joint_C" if args.joint else "tier2")
+    eps = [int(r["ep"]) for r in rows]
     acc = [r["probe_env_acc"] for r in rows]
-    chance = rows[0]["probe_chance"]    # per-row, but should be constant
+    # Chance: tier2 stores it per-row; joint_C doesn't compute it inline.
+    # For joint, probe is on the query set (n_envs=2 val envs in our setup)
+    # so chance is 0.5. For tier2, use the stored chance.
+    if args.joint:
+        chance = 0.5
+    else:
+        # tier2 stores probe_chance per row
+        import csv as _csv
+        with open(path) as f:
+            r0 = next(_csv.DictReader(f))
+        chance = float(r0["probe_chance"]) if r0.get("probe_chance") not in (None, "", "nan") else 0.5
 
     fig, ax = plt.subplots(figsize=(7, 5))
     ax.plot(eps, acc, "o-", color="C2", label="linear probe (c → env_id)")

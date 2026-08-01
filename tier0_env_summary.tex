@@ -1,0 +1,60 @@
+% Sionna emulation environments — brief summary for paper.
+% Source: code/figures/sionna_env_coverage.csv (21 envs, generated
+% by scripts/viz_env_coverage.py).
+% All envs share the same underlying data structure: 400 grid
+% points × 100 trials = 40,000 rows per env, 4 anchors, tag at
+% z = 1.75 m. The table focuses on the dimensions that drive
+% downstream behavior: environment type, room area, and NLOS rate.
+% Environments are partitioned 10 / 11 into train / val; the val
+% set deliberately includes an outdoor OOD subset (envs 10--20)
+% to test generalization across deployment geometry.
+
+\begin{table}[t]
+\centering
+\caption{Sionna emulation environments (21 total). Each environment
+contains 400 grid points $\times$ 100 trials (40{,}000 measurements)
+with 4 anchors and a tag at $z{=}1.75$\,m. Environments are
+partitioned 10 / 11 into train / val (the val set is deliberately
+outdoor-OOD to test generalization). The Type column groups envs
+by deployment geometry; NLOS rate is the fraction of
+(anchor, position) pairs for which Sionna reports a
+non-line-of-sight path. Env\,14 is a 20\%-missing-data variant
+of env\,13; all other envs have complete measurements.}
+\label{tab:envs}
+\small
+\begin{tabular}{l l r r}
+\toprule
+{ID} & {Type} & {Area (m$^2$)} & {NLOS} \\
+\midrule
+0  & indoor room              & 187   & 0.0\%  \\
+1  & indoor room              & 601   & 0.0\%  \\
+2  & indoor room              & 1326  & 0.0\%  \\
+3  & indoor room w/ blockages & 465   & 0.0\%  \\
+4  & indoor room w/ blockages & 465   & 38.3\% \\
+5  & indoor garage            & 1907  & 7.2\%  \\
+6  & indoor garage            & 1907  & 5.4\%  \\
+7  & indoor garage            & 1907  & 2.7\%  \\
+8  & indoor garage            & 1907  & 11.8\% \\
+9  & indoor garage            & 1907  & 15.3\% \\
+\addlinespace
+10 & outdoor w/ blockages     & 361   & 0.0\%  \\
+11 & outdoor w/ blockages     & 261   & 0.0\%  \\
+12 & outdoor w/ blockages     & 361   & 35.8\% \\
+13 & outdoor open             & 140   & 0.0\%  \\
+14 & outdoor open             & 140   & 0.0\%\,$^{\dagger}$ \\
+15 & outdoor parking lot      & 1907  & 2.7\%  \\
+16 & outdoor parking lot      & 1907  & 11.8\% \\
+17 & outdoor parking lot      & 1907  & 7.4\%  \\
+18 & outdoor parking lot      & 1907  & 7.4\%  \\
+19 & outdoor parking lot      & 1907  & 7.1\%  \\
+20 & outdoor open             & 485   & 0.0\%  \\
+\bottomrule
+\end{tabular}
+
+\smallskip
+\noindent
+\small
+$^{\dagger}$Env 14 is a 20\%-missing-data variant of env 13:
+59\% of (tag, anchor) measurements have at least one NaN ToA.
+All other envs have complete ToA and AoA records.
+\end{table}

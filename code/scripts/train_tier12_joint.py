@@ -581,16 +581,37 @@ def run_phase_C(
     save_every: int = 0,
     val_items: list = None,
     eval_fn = None,
+    freeze_episodes: int = 0,
+    unfreeze_lr_scale: float = 1.0,
 ) -> tuple[DisentangledTrainer, list[dict], list[dict]]:
-    """Joint training. Encoder unfrozen. Each episode is:
-       1. MAML inner loop over N envs (loc head adapts, encoder also adapts)
-       2. With the *adapted* encoder, do a disentangle forward pass on the
-          query set, compute disentanglement losses
-       3. Two optimizers: featurizer (encoder + h_phi + FiLM + heads) and
-          adversary. The GR layer flips the adv gradient on the featurizer side.
+    """Joint training with progressive unfreezing.
 
-    Curriculum on lam: 0 for warmup_episodes, linear ramp to 1 over
-    ramp_episodes, then constant.
+    Stage 1 (ep in [0, freeze_episodes)): encoder FROZEN. Only
+    h_phi/FiLM/heads/adversary train. No FOMAML inner loop (the
+    encoder isn't getting adapted anyway). This is the "Phase B
+    continued" stage — it lets the new modules settle into a
+    reasonable basin before the encoder is allowed to move.
+
+    Stage 2 (ep in [freeze_episodes, n_episodes)): encoder UNFROZEN
+    at LR = cfg.finetune_lr * unfreeze_lr_scale. Heads + FiLM train
+    at the full cfg.finetune_lr. MAML inner loop is enabled. This is
+    the full joint training that previously destroyed the FOMAML
+    features (per the 7/10 memory, meta loss rose 0.24 -> 0.37 with
+    encoder+head at the same LR).
+
+    Curriculum on lam (adv weight) spans the WHOLE Phase C, not just
+    stage 2, so the disentangle pressure is already at its target
+    value when the encoder unfreezes. (Stage 1 trains the adversary
+    alongside the heads, so the adversary is calibrated by the time
+    the encoder comes online.)
+
+    Args:
+      freeze_episodes: how many episodes to keep the encoder frozen
+        at the start of Phase C. 0 = old behavior (immediate
+        unfreeze). Default 20.
+      unfreeze_lr_scale: multiplier on cfg.finetune_lr for the
+        encoder params during stage 2. 0.1 = 10x lower than heads.
+        Default 0.1.
     """
     # ---- Attention model: skip the FOMAML inner-loop (maml_head
     # state-dict shapes don't match) and just do plain supervised
@@ -609,10 +630,25 @@ def run_phase_C(
             n_envs,
         )
 
-    # Unfreeze the encoder
-    for p in model.disent.encoder.parameters():
-        p.requires_grad_(True)
-    model.disent.encoder.train()
+    # ---- Progressive-unfreeze setup ----
+    # Stage 1 (ep < freeze_episodes): encoder FROZEN. Only the new
+    # modules (h_phi, FiLM, heads, adversary) train. No MAML inner loop
+    # because adapting maml_head to a frozen encoder is wasted compute.
+    # Stage 2 (ep >= freeze_episodes): encoder UNFROZEN at
+    # cfg.finetune_lr * unfreeze_lr_scale. Heads + FiLM keep the full
+    # cfg.finetune_lr. MAML inner loop is enabled.
+
+    if freeze_episodes > 0:
+        for p in model.disent.encoder.parameters():
+            p.requires_grad_(False)
+        model.disent.encoder.eval()
+        print(f"  Phase C progressive-unfreeze: {freeze_episodes} frozen-encoder "
+              f"episodes first, then unfreeze at LR*{unfreeze_lr_scale}")
+    else:
+        for p in model.disent.encoder.parameters():
+            p.requires_grad_(True)
+        model.disent.encoder.train()
+        print(f"  Phase C: encoder UNFROZEN from ep 1 (legacy behavior)")
 
     # Build a separate "core" (encoder + loc head) for the MAML inner loop.
     # Note: this is a DIFFERENT LocationHead from model's loc_head -- it's
@@ -631,19 +667,34 @@ def run_phase_C(
             return (ep - warmup_episodes) / ramp_episodes
         return 1.0
 
-    # Optimizer 1: featurizer side (encoder + h_phi + FiLM + heads + maml_head)
-    feat_params = (
-        list(model.disent.encoder.parameters())
-        + list(model.disent.h_phi.parameters())
+    # Two parameter groups in the featurizer optimizer:
+    #   - encoder params: stage 1 excluded (requires_grad=False),
+    #     stage 2 trained at cfg.finetune_lr * unfreeze_lr_scale
+    #   - everything else: full cfg.finetune_lr, both stages
+    head_params = (
+        list(model.disent.h_phi.parameters())
         + list(model.disent.film.parameters())
         + list(model.loc_head.parameters())
         + list(model.nlos_mlp.parameters())
         + list(model.cond_head.parameters())
         + list(maml_head.parameters())
     )
+    encoder_params = list(model.disent.encoder.parameters())
+    # Optimizer 1: featurizer side. We use param_groups so the encoder
+    # gets a different LR from the heads during stage 2. During stage 1
+    # the encoder params are excluded from this optimizer (their
+    # requires_grad is False, so Adam just won't update them anyway).
+    feat_param_groups = [
+        {"params": head_params, "lr": cfg.finetune_lr},
+    ]
+    if any(p.requires_grad for p in encoder_params):
+        feat_param_groups.append({
+            "params": encoder_params,
+            "lr": cfg.finetune_lr * unfreeze_lr_scale,
+        })
+    opt_feat = torch.optim.Adam(feat_param_groups)
     # Optimizer 2: adversary only
     adv_params = list(model.disent.adv.parameters())
-    opt_feat = torch.optim.Adam(feat_params, lr=cfg.finetune_lr)
     opt_adv = torch.optim.Adam(adv_params, lr=cfg.adv_lr)
 
     rng = np.random.default_rng(cfg.seed + 999)  # different stream from A
@@ -651,56 +702,85 @@ def run_phase_C(
     history = []
 
     print(f"  Phase C: {n_episodes} episodes (warmup={warmup_episodes}, "
-          f"ramp={ramp_episodes}), encoder UNFROZEN"
+          f"ramp={ramp_episodes})"
           f"{f', saving every {save_every} eps' if save_every > 0 else ''}")
     t0 = time.time()
     snapshots = []  # list of (ep, state_dict, per_cond_or_None)
     for ep in range(n_episodes):
+        # ---- Stage transition: at freeze_episodes, unfreeze encoder ----
+        if freeze_episodes > 0 and ep == freeze_episodes:
+            for p in model.disent.encoder.parameters():
+                p.requires_grad_(True)
+            model.disent.encoder.train()
+            # Adam tracks param groups; since encoder_params was already
+            # in opt_feat as a param group (just with requires_grad
+            # False), all we need is to flip the flag. Adam will start
+            # updating on the next step.
+            print(f"    [phaseC] >>> unfreezing encoder at ep {ep+1} "
+                  f"(LR={cfg.finetune_lr * unfreeze_lr_scale:.1e})")
+
         lam = compute_lambda(ep)
         opt_feat.zero_grad()
+        encoder_trainable = any(p.requires_grad for p in model.disent.encoder.parameters())
 
-        # ---- MAML inner loop (encoder + maml_head adapted per env) ----
-        env_sample = list(rng.choice(
-            env_ids, size=min(cfg.n_way, len(env_ids)), replace=False
-        ))
+        # ---- MAML inner loop (only when encoder is trainable) ----
+        meta_loss = torch.tensor(0.0, device=device)
         all_query_x, all_query_y, all_query_env, all_query_cond, all_query_nlos = [], [], [], [], []
-        meta_loss = 0.0
-        for eid in env_sample:
-            sx, sy = _sample_task(items, int(eid), cfg.k_shot, cfg.seed + ep, rng)
-            qx, qy = _sample_task(items, int(eid), cfg.q_query, cfg.seed + ep + 1, rng)
-            # also pull labels for disentangle on query
-            q_pool = [it for it in items if it[2] == int(eid)]
-            q_idx = rng.permutation(len(q_pool))[:cfg.q_query].tolist()
-            q_env = torch.tensor([q_pool[i][2] for i in q_idx], dtype=torch.long)
-            q_cond = torch.tensor([q_pool[i][3] for i in q_idx], dtype=torch.long)
-            q_nlos = torch.from_numpy(np.stack([q_pool[i][4] for i in q_idx])).bool()
+        if encoder_trainable:
+            env_sample = list(rng.choice(
+                env_ids, size=min(cfg.n_way, len(env_ids)), replace=False
+            ))
+            for eid in env_sample:
+                sx, sy = _sample_task(items, int(eid), cfg.k_shot, cfg.seed + ep, rng)
+                qx, qy = _sample_task(items, int(eid), cfg.q_query, cfg.seed + ep + 1, rng)
+                # also pull labels for disentangle on query
+                q_pool = [it for it in items if it[2] == int(eid)]
+                q_idx = rng.permutation(len(q_pool))[:cfg.q_query].tolist()
+                q_env = torch.tensor([q_pool[i][2] for i in q_idx], dtype=torch.long)
+                q_cond = torch.tensor([q_pool[i][3] for i in q_idx], dtype=torch.long)
+                q_nlos = torch.from_numpy(np.stack([q_pool[i][4] for i in q_idx])).bool()
 
-            sx, sy = sx.to(device), sy.to(device)
-            qx, qy = qx.to(device), qy.to(device)
-            q_env, q_cond, q_nlos = q_env.to(device), q_cond.to(device), q_nlos.to(device)
+                sx, sy = sx.to(device), sy.to(device)
+                qx, qy = qx.to(device), qy.to(device)
+                q_env, q_cond, q_nlos = q_env.to(device), q_cond.to(device), q_nlos.to(device)
 
-            q_loss, _ = _adapt_and_eval(
-                model.disent.encoder, maml_head, sx, sy, qx, qy,
-                inner_lr=cfg.maml_inner_lr, inner_steps=cfg.maml_inner_steps,
-            )
-            meta_loss = meta_loss + q_loss
+                q_loss, _ = _adapt_and_eval(
+                    model.disent.encoder, maml_head, sx, sy, qx, qy,
+                    inner_lr=cfg.maml_inner_lr, inner_steps=cfg.maml_inner_steps,
+                )
+                meta_loss = meta_loss + q_loss
 
-            all_query_x.append(qx)
-            all_query_y.append(qy)
-            all_query_env.append(q_env)
-            all_query_cond.append(q_cond)
-            all_query_nlos.append(q_nlos)
-        meta_loss = meta_loss / max(1, len(env_sample))
+                all_query_x.append(qx)
+                all_query_y.append(qy)
+                all_query_env.append(q_env)
+                all_query_cond.append(q_cond)
+                all_query_nlos.append(q_nlos)
+            meta_loss = meta_loss / max(1, len(env_sample))
 
         # ---- Disentangle pass on the query set (using the CURRENT encoder,
         #      not the MAML-adapted one -- MAML adapts the encoder to a
         #      specific env, but disentanglement should be on the
         #      shared representation, not the env-specific one) ----
-        qx_all = torch.cat(all_query_x, dim=0)
-        qy_all = torch.cat(all_query_y, dim=0)
-        qenv_all = torch.cat(all_query_env, dim=0)
-        qcond_all = torch.cat(all_query_cond, dim=0)
-        qnlos_all = torch.cat(all_query_nlos, dim=0)
+        # In stage 1 (encoder frozen), we just sample a single batch of
+        # train items since the MAML inner loop is skipped.
+        if encoder_trainable:
+            qx_all = torch.cat(all_query_x, dim=0)
+            qy_all = torch.cat(all_query_y, dim=0)
+            qenv_all = torch.cat(all_query_env, dim=0)
+            qcond_all = torch.cat(all_query_cond, dim=0)
+            qnlos_all = torch.cat(all_query_nlos, dim=0)
+        else:
+            # Stage 1: just grab a random batch from the train pool.
+            # Keep the batch size comparable to one env's query set so
+            # the per-batch losses are on the same scale as stage 2.
+            n = min(cfg.q_query, len(items))
+            qidx = rng.choice(len(items), size=n, replace=False)
+            qx_all = torch.from_numpy(np.stack([items[i][0] for i in qidx])).float().to(device)
+            qy_all = torch.from_numpy(np.stack([items[i][1] for i in qidx])).float().to(device)
+            qenv_all = torch.tensor([items[i][2] for i in qidx], dtype=torch.long).to(device)
+            qcond_all = torch.tensor([items[i][3] for i in qidx], dtype=torch.long).to(device)
+            qnlos_all = torch.from_numpy(np.stack([items[i][4] for i in qidx])).bool().to(device)
+
         # Forward through the model (NOT the adapted one) for disentangle
         h_prime, c, adv_logits, loc, nlos_logits, cond_logits = model(
             qx_all, detach_c_for_adv=False
@@ -722,6 +802,9 @@ def run_phase_C(
             cond_loss = TF.cross_entropy(cond_logits, qcond_all)
         else:
             cond_loss = torch.zeros((), device=device)
+        # In stage 1, no meta_loss (encoder frozen, no FOMAML). The
+        # disentangle pass is still useful -- it lets the new modules
+        # and the adversary calibrate against the frozen encoder.
         feat_loss = (
             meta_loss
             + task_loss_d
@@ -760,6 +843,7 @@ def run_phase_C(
 
         history.append({
             "episode": ep + 1,
+            "stage": "frozen" if not encoder_trainable else "unfrozen",
             "lambda": lam,
             "meta_loss": float(meta_loss.item()),
             "task_loss_disent": float(task_loss_d.item()),
@@ -770,7 +854,8 @@ def run_phase_C(
             "probe_env_acc": probe,
         })
         if (ep + 1) % max(1, n_episodes // 10) == 0 or ep == 0:
-            print(f"    [phaseC] ep {ep+1:3d}/{n_episodes}  lam={lam:.2f}  "
+            stage_tag = "F" if not encoder_trainable else "U"
+            print(f"    [phaseC] ep {ep+1:3d}/{n_episodes} [{stage_tag}]  lam={lam:.2f}  "
                   f"meta={meta_loss.item():.3f}  task_d={task_loss_d.item():.3f}  "
                   f"adv={adv_ce.item():.3f}  cond={cond_loss.item():.3f}  "
                   f"probe={probe:.3f}  ({time.time()-t0:.1f}s)")
@@ -881,10 +966,16 @@ def eval_per_nlos_bucket(model: DisentangledTrainer, items: list, device: str,
             err = torch.linalg.norm(loc - y, dim=-1)         # (B, T)
             err_per_window = err.mean(dim=-1).cpu().numpy()  # (B,)
             nlos_rate = nlos.float().mean(dim=(1, 2)).numpy()  # (B,)
+            # Bucket thresholds: 5% / 25% NLOS rate (per window).
+            # These are the thresholds Justin uses to split low/mid/high
+            # NLOS conditions for the per-cond val report. The old 0.3 /
+            # 0.7 thresholds were way too lax for this dataset -- with
+            # 13/21 envs at 100% per-cell NLOS, almost every window
+            # ended up in "high" and "low" was an empty bucket.
             for rate, e in zip(nlos_rate.tolist(), err_per_window.tolist()):
-                if rate < 0.3:
+                if rate < 0.05:
                     errs_per_bucket[0].append(e)
-                elif rate < 0.7:
+                elif rate < 0.25:
                     errs_per_bucket[1].append(e)
                 else:
                     errs_per_bucket[2].append(e)
@@ -968,9 +1059,9 @@ def run_baseline_for_joint(
                 err = torch.linalg.norm(pred - y, dim=-1).cpu().numpy()
                 nlos_rate = nlos.float().mean(dim=(1, 2)).numpy()
                 for rate, e in zip(nlos_rate.tolist(), err.tolist()):
-                    if rate < 0.3:
+                    if rate < 0.05:
                         errs_per_cond[0].append(e)
-                    elif rate < 0.7:
+                    elif rate < 0.25:
                         errs_per_cond[1].append(e)
                     else:
                         errs_per_cond[2].append(e)
@@ -1071,6 +1162,20 @@ def main():
                         "since meta loss can rise over time.")
     p.add_argument("--phase_c_warmup", type=int, default=10)
     p.add_argument("--phase_c_ramp", type=int, default=20)
+    p.add_argument("--phase_c_freeze_episodes", type=int, default=0,
+                   help="Progressive-unfreezing: keep encoder FROZEN for the "
+                        "first N episodes of Phase C. Only h_phi/FiLM/heads/"
+                        "adversary train during this period; no FOMAML inner "
+                        "loop. At episode N+1, encoder is unfrozen and "
+                        "trained at LR = finetune_lr * unfreeze_lr_scale. "
+                        "Default 0 = old behavior (immediate unfreeze). "
+                        "Try 20 to fix the encoder-drift problem "
+                        "(see memory/2026-07-10.md 'Phase C trajectory').")
+    p.add_argument("--phase_c_unfreeze_lr_scale", type=float, default=0.1,
+                   help="Progressive-unfreezing: LR multiplier for encoder "
+                        "params once they are unfrozen. 0.1 = 10x lower LR "
+                        "than the heads. Default 0.1. Only takes effect "
+                        "when --phase_c_freeze_episodes > 0.")
     p.add_argument("--model", default="downstream", choices=["downstream", "attention"],
                    help="Which backbone to use for the joint Tier 1+2 trainer. "
                         "'downstream' (default) = ASTAEncoder + LocationHeadPerTimestep. "
@@ -1143,8 +1248,14 @@ def main():
         print("building synthetic data...")
         all_items = build_synthetic_dataset(cfg, seed=cfg.seed)
         env_ids = sorted({it[2] for it in all_items})
-        n_train_envs = max(1, int(0.8 * len(env_ids)))
-        train_envs = set(env_ids[:n_train_envs])
+        # 10 train / 2 val: envs 0-9 train, 10-11 val (matches the
+        # Sionna 21-env protocol where train=[0,10), val=[10,12)).
+        # For other env counts, fall back to 80/20.
+        if len(env_ids) == 12:
+            train_envs = set(env_ids[:10])
+        else:
+            n_train_envs = max(1, int(0.8 * len(env_ids)))
+            train_envs = set(env_ids[:n_train_envs])
         train_items = [it for it in all_items if it[2] in train_envs]
         val_items = [it for it in all_items if it[2] not in train_envs]
         n_envs = len(env_ids)
@@ -1354,6 +1465,8 @@ def main():
             save_every=args.phase_c_save_every,
             val_items=val_items if args.phase_c_save_every > 0 else None,
             eval_fn=eval_closure,
+            freeze_episodes=args.phase_c_freeze_episodes,
+            unfreeze_lr_scale=args.phase_c_unfreeze_lr_scale,
         )
         history["C"] = hist_c
         # Per-cond eval (or per-NLOS-bucket for Sionna)

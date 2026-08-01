@@ -52,7 +52,7 @@ def run_tier0(cfg: Config, train_items, device) -> ASTAEncoder:
         for X, _, _, _, _ in loader:
             X = X.to(device)
             opt.zero_grad()
-            x_pred, mask = model(X)
+            x_pred, mask, _x = model(X)
             loss = ssl_loss(x_pred, X, mask)
             loss.backward()
             opt.step()

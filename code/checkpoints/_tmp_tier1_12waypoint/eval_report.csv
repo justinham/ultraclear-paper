@@ -1,0 +1,4 @@
+method,test_accuracy,n_test
+tier1_encoder+linear_head,1.0000,240
+lse3_nearest_waypoint,1.0000,240
+random_uniform,0.0958,240

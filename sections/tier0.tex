@@ -50,6 +50,31 @@ masking. We considered a contrastive (NT-Xent) auxiliary loss
 \cite{simclr2020} but found it interfered with masked prediction
 during early training; we omit it.
 
+\paragraph{Refill quality.}
+After pretraining, we measure how well the encoder+head refills
+masked cells on a held-out \emph{empty\_open} validation split
+($F{=}2$, 25\% mask, $n{=}7{,}670$ masked cells per channel).
+Table~\ref{tab:tier0_3to1_peranchor} reports per-anchor RMSE and
+MAE for both channels under the selected \emph{3:1} (ToA:AoA)
+channel weighting. The model achieves $0.151$\,m RMSE on ToA
+($0.102$\,m MAE) and $5.21^\circ$ RMSE on AoA azimuth
+($3.58^\circ$ MAE), with per-anchor spread of $\pm 1.0$\,cm on
+ToA and $\pm 0.78^\circ$ on AoA — the refill behaves consistently
+across the array, with no single anchor acting as a
+disproportionately easy or hard case. Both channels operate
+well above the visible-cell noise floor
+($\sigma_{\text{ToA}}{=}0.050$\,m), confirming that the encoder
+is learning nontrivial interpolation rather than a denoising
+identity. The RMSE/MAE ratio of $\sim 1.5$ on both channels
+indicates a moderately heavy-tailed error distribution
+($\sqrt{\pi/2}{\approx}1.25$ for a clean Gaussian): the
+occasional large miss is consistent with a small fraction of
+geometrically degenerate windows where the visible-cell context
+is too sparse to pin down the masked anchor.
+\looseness=-1
+
+\input{tier0_ssl_3to1_peranchor}
+
 \paragraph{Linear-probe diagnostic.}
 We report a linear-probe localization error on a held-out
 environment to verify that the pretrained encoder transfers

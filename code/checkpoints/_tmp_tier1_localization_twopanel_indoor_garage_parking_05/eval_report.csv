@@ -1,0 +1,2 @@
+method,mae_x_m,mae_y_m,mae_norm_m,max_m,n_test
+tier1_encoder+reg_head,0.1288,0.2627,0.3081,0.8851,240

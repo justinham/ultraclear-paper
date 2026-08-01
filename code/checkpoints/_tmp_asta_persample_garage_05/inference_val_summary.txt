@@ -1,0 +1,26 @@
+ASTA per-sample localization inference report
+  csv:        data/sionna_track2_swapped/sionna_uwb_track_indoor_garage_parking_05_A1A4swapped.csv
+  encoder:    /Users/justin/ultraclear-paper/code/checkpoints/tier1_mixed.pt/tier1_sionna.pt
+  head:       checkpoints/_tmp_asta_persample_garage_05/head.pt
+  mode:       val
+  T=32  stride=32
+  n_windows:  12
+
+overall per-step MAE: 0.3756 m
+per-window MAE mean:  0.3756 m
+per-window MAE std:   0.2752 m
+per-step MAE max:     2.0113 m
+
+per-waypoint breakdown:
+  wp=(-4.01, -2.96)  MAE=0.5128 m  n=1
+  wp=(-4.01, +3.91)  MAE=0.8027 m  n=1
+  wp=(-4.01, +11.10)  MAE=0.0990 m  n=1
+  wp=(-1.37, -2.96)  MAE=0.0562 m  n=1
+  wp=(-1.37, +3.93)  MAE=0.8690 m  n=1
+  wp=(-1.37, +11.10)  MAE=0.2173 m  n=1
+  wp=(+1.37, -2.96)  MAE=0.1710 m  n=1
+  wp=(+1.37, +3.91)  MAE=0.2166 m  n=1
+  wp=(+1.37, +11.10)  MAE=0.3226 m  n=1
+  wp=(+4.01, -2.96)  MAE=0.3493 m  n=1
+  wp=(+4.01, +3.91)  MAE=0.7454 m  n=1
+  wp=(+4.01, +11.10)  MAE=0.1448 m  n=1

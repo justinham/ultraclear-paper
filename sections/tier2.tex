@@ -93,6 +93,18 @@ $\bm{c}$ informative about the micro signal that the adversary
 is trying to push out. We set $w_{\mathrm{nlos}} = 0.5$ and
 $w_{\mathrm{cond}} = 2.0$.
 
+The three micro conditions vary only in \emph{NLOS blockage
+severity} --- specifically, the per-(anchor, time) Bernoulli
+event rate and the magnitude of the resulting positive ToA
+bias co-vary across conditions (rare/mild, occasional/moderate,
+frequent/strong). The synthetic generator does \emph{not}
+add multipath reflection noise as a micro knob; a small
+constant Gaussian noise floor is included for realism but is
+held fixed across conds. This design keeps the micro signal
+as a single interpretable axis, so the disentanglement pressure
+is operating on a clean target rather than a confound
+between env layout and noise distribution.
+
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.9\linewidth]{figures/tier2_synthetic/loss_curves.png}

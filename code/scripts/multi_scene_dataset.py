@@ -75,6 +75,7 @@ def build_multi_scene_dataset(
     per_scene_tag_xy_mean: List[np.ndarray] = []
     per_scene_tag_xy_std: List[np.ndarray] = []
     per_scene_cond: List[np.ndarray] = []
+    per_scene_nlos: List[np.ndarray] = []  # per-(grid, trial, M) bool
     scene_info: List[SceneInfo] = []
 
     for env_id, path in enumerate(csv_paths):
@@ -124,6 +125,8 @@ def build_multi_scene_dataset(
         # cond_id: per-trial NLOS indicator (0 = all LOS, 1 = any NLOS)
         los = np.stack([df[f"A{m}_los_nlos"].values for m in range(1, 5)], axis=1)
         cond = (los == 0).any(axis=1).astype(np.int64).reshape(n_grids, n_trials)
+        # per-anchor NLOS mask: (n_grids, n_trials, M=4) bool, True = NLOS
+        nlos_mask = (los == 0).reshape(n_grids, n_trials, 4).astype(bool)
 
         per_scene_features.append(feat)
         per_scene_tag_xy.append(tag_xy)
@@ -131,6 +134,7 @@ def build_multi_scene_dataset(
         per_scene_tag_xy_mean.append(tag_xy_mean)
         per_scene_tag_xy_std.append(tag_xy_std)
         per_scene_cond.append(cond)
+        per_scene_nlos.append(nlos_mask)
         scene_info.append(SceneInfo(
             name=name, env_id=env_id,
             nlos_rate=float(cond.any(axis=1).mean()) if cond.size else 0.0,
@@ -144,6 +148,7 @@ def build_multi_scene_dataset(
         per_scene_features, per_scene_tag_xy, per_scene_cond,
         scene_info, seq_len=seq_len, stride=stride,
         per_scene_tag_xy_z=per_scene_tag_xy_z,
+        per_scene_nlos=per_scene_nlos,
     )
     return ds, scene_info
 
@@ -175,6 +180,7 @@ class MultiSceneSionnaDataset(Dataset):
         seq_len: int = 32,
         stride: int = 32,
         per_scene_tag_xy_z: List[np.ndarray] | None = None,  # list of (n_grids, n_trials, 2) z-scored
+        per_scene_nlos: List[np.ndarray] | None = None,     # list of (n_grids, n_trials, M) bool
     ):
         """Direct constructor that takes already-grouped per-scene arrays."""
         ds = cls.__new__(cls)
@@ -185,11 +191,13 @@ class MultiSceneSionnaDataset(Dataset):
         ds._per_scene = []
         for s_idx, (f, xy, c) in enumerate(zip(per_scene_features, per_scene_tag_xy, per_scene_cond)):
             xy_z = per_scene_tag_xy_z[s_idx] if per_scene_tag_xy_z is not None else xy
+            nl = per_scene_nlos[s_idx] if per_scene_nlos is not None else None
             ds._per_scene.append({
                 "feat": f,         # (n_grids, n_trials, M, F)
                 "tag_xy": xy,      # raw meters
                 "tag_xy_z": xy_z,  # z-scored (or raw, if not provided)
                 "cond": c,         # (n_grids, n_trials)
+                "nlos": nl,        # (n_grids, n_trials, M) bool, or None
             })
         # build window index: (scene_idx, grid_idx, start_trial)
         ds.windows = []
@@ -215,8 +223,16 @@ class MultiSceneSionnaDataset(Dataset):
         if not all_train:
             raise RuntimeError("no training scenes for norm stats")
         cat = np.concatenate(all_train, axis=0)
-        self.norm_mean = cat.mean(axis=0).astype(np.float32)
-        self.norm_std = (cat.std(axis=0) + 1e-6).astype(np.float32)
+        # Some scenes (e.g. outdoor_empty_missing20 with 20% missing
+        # ToA) have NaN cells. NaN-safe stats so a missing-data scene
+        # in the train mix doesn't poison the encoder normalization.
+        self.norm_mean = np.nanmean(cat, axis=0).astype(np.float32)
+        self.norm_std = (np.nanstd(cat, axis=0) + 1e-6).astype(np.float32)
+        # Safety net: if a channel was 100% NaN across all train
+        # scenes, fall back to zero-mean / unit-std so we don't
+        # divide by NaN downstream.
+        self.norm_mean = np.nan_to_num(self.norm_mean, nan=0.0)
+        self.norm_std = np.nan_to_num(self.norm_std, nan=1.0)
         return self.norm_mean, self.norm_std
 
     def __len__(self) -> int:
@@ -228,6 +244,13 @@ class MultiSceneSionnaDataset(Dataset):
         x = scene["feat"][g, s : s + self.seq_len]              # (T, M, F)
         if hasattr(self, "norm_mean"):
             x = (x - self.norm_mean) / self.norm_std
+            # NaN inputs (from missing-data scenes like
+            # outdoor_empty_missing20) poison the encoder — replace
+            # with zero in normalized space (i.e. the per-channel
+            # mean). The per-(T,M) NLOS mask is returned alongside
+            # so downstream losses can ignore predictions on missing
+            # anchors if desired.
+            x = np.nan_to_num(x, nan=0.0, posinf=0.0, neginf=0.0)
         # z-scored tag_xy so the FOMAML sees consistent normalized
         # xy regardless of scene scale. Denormalize at eval time
         # using scene_info[scene_idx].tag_xy_mean/std.
@@ -235,13 +258,19 @@ class MultiSceneSionnaDataset(Dataset):
         c = int(scene["cond"][g, s + self.seq_len // 2])        # 0 or 1
         env_id = self.scene_info[s_idx].env_id
         T_, M_, _ = x.shape
-        nlos = np.zeros((T_, M_), dtype=bool)
+        # Per-(T, M) NLOS mask from the dataset (per_scene_nlos). If
+        # the dataset was built without nlos (older call sites), fall
+        # back to an all-False placeholder.
+        if scene.get("nlos") is not None:
+            nlos = scene["nlos"][g, s : s + self.seq_len]      # (T, M) bool
+        else:
+            nlos = np.zeros((T_, M_), dtype=bool)
         return (
             torch.from_numpy(x).float(),
             torch.from_numpy(y).float(),
             torch.tensor(env_id, dtype=torch.long),
             torch.tensor(c, dtype=torch.long),
-            torch.from_numpy(nlos),            # (T, M) all-False
+            torch.from_numpy(nlos),            # (T, M) bool
         )
 
 

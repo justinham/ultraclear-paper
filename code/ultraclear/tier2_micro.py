@@ -151,8 +151,9 @@ def disentangle_loss(
     n_envs: int,
     task_loss: torch.Tensor,
     lambda_adv: float = 1.0,
+    chance: float | None = None,
 ) -> torch.Tensor:
-    """Total loss = task_loss + lambda_adv * adv_ce.
+    """Total loss = task_loss + lambda_adv * capped_adv_ce.
 
     The `+` sign is correct (NOT `-`) because the gradient-reversal
     layer inside `DisentangledModel.forward` flips the sign of the
@@ -161,6 +162,23 @@ def disentangle_loss(
     AWAY from being predictive of env (DANN disentanglement pressure).
     The adversary's own weights, by contrast, see the un-reversed
     gradient and step in the normal minimizing direction.
+
+    If `chance` is provided (a scalar like ln(n_envs)), the adversary
+    term is capped at 2*chance (DANN standard practice): the
+    featurizer only feels disentanglement pressure once the
+    adversary is performing above chance. Without this cap, the
+    raw adv_ce can be 50-300 on real data with 21+ envs (because the
+    featurizer wins so hard the adversary can't predict above
+    chance), which dominates the gradient and destabilizes the
+    location head. The cap prevents this explosion.
     """
     adv_ce = TF.cross_entropy(adv_logits, env_ids)
-    return task_loss + lambda_adv * adv_ce
+    if chance is not None:
+        # Capped: only disentanglement pressure above 2*chance.
+        # Gradient is zero when adv_ce <= 2*chance, so the featurizer
+        # only feels the push when the adversary is doing well.
+        cap = 2.0 * chance
+        adv_term = torch.clamp(adv_ce - cap, min=0.0)
+    else:
+        adv_term = adv_ce
+    return task_loss + lambda_adv * adv_term

@@ -291,14 +291,19 @@ def main():
                    help="if set, save per-episode FOMAML losses and "
                         "per-checkpoint val loc errors to this CSV.")
     p.add_argument("--n_eval_trials", type=int, default=30)
+    p.add_argument("--n_way", type=int, default=None,
+                   help="override cfg.n_way (envs sampled per FOMAML "
+                        "episode). If unset, uses Config default.")
     args = p.parse_args()
 
     cfg = Config()
     cfg.n_channels = 2  # F=2
     cfg.device = args.device
     cfg.seed = args.seed
+    if args.n_way is not None:
+        cfg.n_way = args.n_way
 
-    print(f"device: {cfg.device}  seed: {cfg.seed}  n_episodes: {args.n_episodes}")
+    print(f"device: {cfg.device}  seed: {cfg.seed}  n_episodes: {args.n_episodes}  n_way: {cfg.n_way}")
     print(f"Tier 0 ckpt: {args.tier0_ckpt or '(none — random init)'}")
     print(f"train scenes: {args.train_scenes}  val scenes: {args.val_scenes}")
     print()

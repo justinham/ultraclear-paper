@@ -60,15 +60,19 @@ def evaluate(model, full_ds, cfg, norm_mean, norm_std, n_windows, seed=0):
         Xb = X.unsqueeze(0)
         torch.manual_seed(seed + int(idx))
         with torch.no_grad():
-            X_masked, mask = random_mask(Xb, cfg.mask_ratio)
-            x_pred, _ = model(X_masked)
-        # normalize-space arrays
-        Xn = X.squeeze(-1).numpy()                # (T, M, 2)
-        x_pred_n = x_pred.squeeze(0).squeeze(-1).numpy()
-        mask_n = mask.squeeze(0).numpy()          # (T, M)
-        # denormalize
-        Xd = Xn * norm_std + norm_mean
-        x_pred_d = x_pred_n * norm_std + norm_mean
+            # Pass the un-masked X. The model does its own internal
+            # masking (via SSLPretrainer.forward -> random_mask), and the
+            # skip-connection passthrough needs the original values to
+            # be correct at visible cells. Double-masking here would
+            # zero out the passthrough at cells the model re-marks as
+            # visible, producing garbage predictions.
+            x_pred, model_mask, _x_in = model(Xb)
+        # use the model's internal mask as the eval mask, since the
+        # model's head was trained to predict at *its* mask positions
+        mask_n = model_mask.squeeze(0).numpy()  # (T, M)
+        # denormalize (pred is already in normalized space from the model)
+        Xd = X.squeeze(-1).numpy() * norm_std + norm_mean  # (T, M, 2)
+        x_pred_d = x_pred.squeeze(0).squeeze(-1).numpy() * norm_std + norm_mean
         # per-(grid, anchor, channel) center: mean over trials of the
         # 100-trial grid
         gi, s = full_ds.windows[int(idx)]
@@ -168,6 +172,8 @@ def main():
         corr = float(np.corrcoef(dev_pred, dev_true)[0, 1]) if dev_true.std() > 0 else float("nan")
         per_anchor_rmse = [float(np.sqrt(np.mean(err[anchor == m] ** 2)))
                             for m in range(cfg.n_anchors)]
+        per_anchor_mae = [float(np.mean(np.abs(err[anchor == m])))
+                            for m in range(cfg.n_anchors)]
         per_anchor_bias = [float(err[anchor == m].mean())
                             for m in range(cfg.n_anchors)]
         print()
@@ -181,9 +187,9 @@ def main():
         print(f"    corr(pred_dev, true_dev):{corr:.4f}")
         print(f"    visible-cell noise std:  {visible_noise_std[f]:.4f} {units[f]}")
         print(f"    per-anchor breakdown:")
-        print(f"      {'anchor':<8} {'RMSE':>10} {'bias':>12}")
+        print(f"      {'anchor':<8} {'RMSE':>10} {'MAE':>10} {'bias':>12}")
         for m in range(cfg.n_anchors):
-            print(f"      A{m+1:<7} {per_anchor_rmse[m]:>10.4f} {per_anchor_bias[m]:>+12.4f}")
+            print(f"      A{m+1:<7} {per_anchor_rmse[m]:>10.4f} {per_anchor_mae[m]:>10.4f} {per_anchor_bias[m]:>+12.4f}")
         summary.append({
             "channel": f, "channel_name": CHANNEL_NAMES[f],
             "units": units[f],
@@ -192,6 +198,7 @@ def main():
             "shrink_slope": slope, "corr": corr,
             "visible_noise_std": visible_noise_std[f],
             "per_anchor_rmse": per_anchor_rmse,
+            "per_anchor_mae": per_anchor_mae,
             "per_anchor_bias": per_anchor_bias,
         })
 
@@ -207,6 +214,7 @@ def main():
         for s in summary:
             for m in range(cfg.n_anchors):
                 f.write(f"rmse_A{m+1}_{s['channel_name'].split()[0]},{s['per_anchor_rmse'][m]:.6f}\n")
+                f.write(f"mae_A{m+1}_{s['channel_name'].split()[0]},{s['per_anchor_mae'][m]:.6f}\n")
                 f.write(f"bias_A{m+1}_{s['channel_name'].split()[0]},{s['per_anchor_bias'][m]:.6f}\n")
     print(f"\nsaved {csv_out}")
 

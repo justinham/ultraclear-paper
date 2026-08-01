@@ -1,0 +1,132 @@
+% =============================================================================
+% SSL head v1 (no skip) vs v2 (with skip) -- side-by-side architecture figure.
+% Compile via \input{} from main.tex (which sets up the tikz package).
+% Style matches figures/architecture.tex and figures/tier0_pipeline.tex.
+%
+% This is a clean architectural schematic, NOT a per-cell visualization.
+% The matplotlib preview (figures/tier0_ssl_head_skip_preview.png) is the
+% per-cell version. The TikZ here is the clean paper figure.
+% =============================================================================
+\begin{tikzpicture}[
+  font=\sffamily\footnotesize,
+  every node/.style={transform shape},
+  enc/.style={draw, rounded corners=0.6mm, minimum width=18mm, minimum height=11mm, align=center, fill=blue!22},
+  head/.style={draw, rounded corners=0.6mm, minimum width=16mm, minimum height=10mm, align=center, fill=blue!12},
+  merge-on/.style={draw, rounded corners=0.6mm, minimum width=22mm, minimum height=14mm, align=center, fill=yellow!20, drop shadow={shadow xshift=0.5mm, shadow yshift=-0.5mm, opacity=0.3}},
+  merge-off/.style={draw, rounded corners=0.6mm, minimum width=14mm, minimum height=10mm, align=center, fill=gray!8},
+  arr/.style={->, >=stealth, thick, color=blue!50!black},
+  arr-on/.style={->, >=stealth, very thick, color=red!70!black},
+  arr-off/.style={->, >=stealth, color=gray, dashed},
+  arr-data/.style={->, >=stealth, thick, color=teal!60!black},
+  label/.style={font=\sffamily\scriptsize, fontstyle=\itshape, color=gray!70!black},
+]
+
+% ============================================================
+% TITLE
+% ============================================================
+\node[font=\sffamily\bfseries\large] at (5.5, 0)
+      {SSL head: v1 (no skip) \emph{vs}\ v2 (with skip)};
+\node[label, anchor=north] at (5.5, -0.2)
+      {Red path is the new piece. Solid in v2, dashed (and X'd) in v1.};
+
+% ============================================================
+% V1 PANEL  (top)
+% ============================================================
+\begin{scope}[shift={(0, -2)}]
+  % panel header
+  \node[font=\sffamily\bfseries, color=gray!70!black] at (-1.0, -1.5)
+        {\rotatebox{90}{v1: NO skip}};
+
+  % nodes
+  \node[font=\sffamily\bfseries] (v1raw)   at (0.0, 0.0)   {$\mathbf{X}$};
+  \node[font=\sffamily\bfseries] (v1mask)  at (0.0, -2.0)  {$\tilde{\mathbf{X}}$};
+  \node[enc]                       (v1enc)  at (3.0, -2.0)  {ASTA\\encoder\\$f_\theta$};
+  \node[head]                      (v1head) at (6.0, -2.0)  {2-layer\\MLP $g$};
+  \node[merge-off]                 (v1out)  at (9.0, -2.0)  {$\hat{\mathbf{X}}$};
+
+  % forward arrows
+  \draw[arr] (v1raw) -- (v1mask) node[label, midway, right] {apply $\mathbf{M}$};
+  \draw[arr] (v1mask) -- (v1enc) node[label, midway, above] {encode};
+  \draw[arr] (v1enc) -- (v1head) node[label, midway, above] {$\mathbf{H}$};
+  \draw[arr] (v1head) -- (v1out) node[label, midway, above]
+        {$\hat{\mathbf{X}}_{\mathrm{MLP}}$};
+
+  % skip path: dashed, ends in an X (not wired)
+  \draw[arr-off] (v1raw.north) -- ++(0, 0.7) -- (v1out.north)
+        node[label, midway, above, color=gray!50!black]
+        {skip NOT wired in v1};
+  % the X at the end of v1's skip
+  \node[font=\sffamily\bfseries\large, color=gray!50!black] at (9.0, -1.0) {$\times$};
+
+  % v1 result badge
+  \node[draw, rounded corners=0.5mm, fill=red!8,
+        font=\sffamily\scriptsize, color=red!50!black, align=center]
+        at (4.5, -4.0)
+        {v1: ToA RMSE @ \emph{visible} cells = 1.78 m\\[1pt]
+         \scriptsize{(encoder mangles visible inputs)}};
+\end{scope}
+
+% ============================================================
+% DIVIDER
+% ============================================================
+\draw[gray!50, dotted, thick] (0, -7.2) -- (11, -7.2);
+
+% ============================================================
+% V2 PANEL  (bottom, with skip)
+% ============================================================
+\begin{scope}[shift={(0, -10)}]
+  % panel header
+  \node[font=\sffamily\bfseries, color=red!70!black] at (-1.0, -1.5)
+        {\rotatebox{90}{v2: WITH skip}};
+
+  % nodes
+  \node[font=\sffamily\bfseries] (v2raw)   at (0.0, 0.0)   {$\mathbf{X}$};
+  \node[font=\sffamily\bfseries] (v2mask)  at (0.0, -2.0)  {$\tilde{\mathbf{X}}$};
+  \node[enc]                       (v2enc)  at (3.0, -2.0)  {ASTA\\encoder\\$f_\theta$};
+  \node[head]                      (v2head) at (6.0, -2.0)  {2-layer\\MLP $g$};
+  % the new piece: WHERE merge node, with shadow to highlight
+  \node[merge-on]                  (v2merge) at (9.5, -2.0)
+        {$\hat{\mathbf{X}}$\;\!=\;WHERE($\mathbf{M}$,\\[1pt]
+         \;\qquad$\hat{\mathbf{X}}_{\mathrm{MLP}}$,\;\!\textbf{X})};
+
+  % forward arrows
+  \draw[arr] (v2raw) -- (v2mask) node[label, midway, right] {apply $\mathbf{M}$};
+  \draw[arr] (v2mask) -- (v2enc) node[label, midway, above] {encode};
+  \draw[arr] (v2enc) -- (v2head) node[label, midway, above] {$\mathbf{H}$};
+  \draw[arr-data] (v2head.east) -- (v2merge.west)
+        node[label, midway, above, color=teal!60!black]
+        {$\hat{\mathbf{X}}_{\mathrm{MLP}}$};
+
+  % skip path: solid red, wired INTO the merge node
+  \draw[arr-on] (v2raw.north) -- ++(0, 0.7)
+        node[label, midway, right, color=red!70!black] {skip}
+        -- (v2merge.north) -- (v2merge.north |- v2mask.north)
+        -- (v2merge.north);
+  % (the above draws: from raw up, over to above merge, down into merge)
+  % a cleaner version:
+  \draw[arr-on] (v2raw.north) -- ++(0, 1.0) coordinate (skip_top)
+                              -- (v2merge.north |- skip_top) -- (v2merge.north);
+  \node[label, color=red!70!black, font=\sffamily\scriptsize\bfseries,
+        anchor=south] at (4.5, 1.0)
+        {skip: raw $\mathbf{X}$ at visible cells};
+
+  % v2 result badge
+  \node[draw, rounded corners=0.5mm, fill=green!8,
+        font=\sffamily\scriptsize, color=green!50!black, align=center]
+        at (4.5, -4.0)
+        {v2: ToA RMSE @ \emph{visible} cells = 0.00 m (passthrough)\\[1pt]
+         \scriptsize{(encoder used only at masked cells)}};
+\end{scope}
+
+% ============================================================
+% BOTTOM: "what stays the same" caption
+% ============================================================
+\node[draw, dashed, rounded corners=1mm, fill=blue!5,
+       font=\sffamily\scriptsize, color=blue!50!black, align=center,
+      anchor=north] at (5.5, -16) {%
+  Both architectures train the encoder+head the same way: the loss is
+  computed only on masked cells,\\[1pt] so the encoder and head weights are
+  identical. The skip is an \emph{inference-time} architectural choice.%
+};
+
+\end{tikzpicture}

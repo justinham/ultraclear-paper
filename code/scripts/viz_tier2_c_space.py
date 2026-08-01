@@ -23,26 +23,21 @@ from sklearn.manifold import TSNE
 from ultraclear.config import Config
 from ultraclear.data import build_synthetic_dataset, TensorUWB
 from scripts.train_tier2_synthetic import DisentangledTrainer
+from scripts.viz_tier2_helpers import add_joint_flag, resolve_paths, load_model_from_ckpt
 
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--ckpt", type=str, default="checkpoints/tier2_synthetic/tier2_synthetic.pt")
-    p.add_argument("--out", type=str, default="figures/tier2_synthetic/c_space_tsne.png")
+    add_joint_flag(p)
+    p.add_argument("--joint_ckpt", type=str, default="checkpoints/joint/phase_C.pt")
     p.add_argument("--max_points", type=int, default=600)
-    p.add_argument("--device", type=str, default="cpu")
     p.add_argument("--perplexity", type=int, default=30)
     args = p.parse_args()
 
+    args.ckpt, args.out = resolve_paths(args)
+
     print(f"loading {args.ckpt}...")
-    ck = torch.load(args.ckpt, map_location=args.device, weights_only=False)
-    cfg_dict = ck["cfg"]
-    n_envs = ck["n_envs"]
-    cfg = Config(**{k: v for k, v in cfg_dict.items() if k in Config.__dataclass_fields__})
-    cfg.device = args.device
-    model = DisentangledTrainer(cfg, n_envs=n_envs).to(args.device)
-    model.load_state_dict(ck["model_state"])
-    model.eval()
+    model, cfg, ck = load_model_from_ckpt(args.ckpt, args.device)
 
     print("building data...")
     all_items = build_synthetic_dataset(cfg, seed=cfg.seed)

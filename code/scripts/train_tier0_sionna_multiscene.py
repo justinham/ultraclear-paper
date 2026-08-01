@@ -72,7 +72,7 @@ def run_tier0(
         for X, _, _, _, _ in train_loader:
             X = X.to(device)
             opt.zero_grad()
-            x_pred, mask = model(X)
+            x_pred, mask, _x = model(X)
             loss = ssl_loss(x_pred, X, mask, channel_weights=cw)
             loss.backward()
             opt.step()
@@ -87,7 +87,7 @@ def run_tier0(
             with torch.no_grad():
                 for X, _, _, _, _ in val_loader:
                     X = X.to(device)
-                    x_pred, mask = model(X)
+                    x_pred, mask, _x = model(X)
                     vloss = ssl_loss(x_pred, X, mask, channel_weights=cw)
                     vtotal += vloss.item() * X.size(0)
                     vn += X.size(0)
@@ -103,6 +103,8 @@ def run_tier0(
             print(f"  [tier0 multi] ep {ep+1:3d}/{cfg.ssl_epochs}  "
                   f"train={train_loss:.4f}{vstr}  "
                   f"({time.time()-t0:.1f}s)")
+    print(f"  done in {time.time()-t0:.1f}s")
+
     print(f"  done in {time.time()-t0:.1f}s")
     return model, train_losses, val_losses
 
@@ -251,6 +253,18 @@ def main():
         "norm_std": norm_std,
     }, out_path / "tier0_multiscene_f2.pt")
     print(f"\nsaved → {out_path / 'tier0_multiscene_f2.pt'}")
+
+    # Persist per-epoch loss to CSV so downstream viz scripts
+    # (e.g. the all-tiers training-curve figure) can read it
+    # without re-running training.
+    import csv
+    csv_path = out_path / "tier0_history.csv"
+    with open(csv_path, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["epoch", "train_loss", "val_loss"])
+        for ep, (t, v) in enumerate(zip(train_losses, val_losses), 1):
+            w.writerow([ep, f"{t:.6f}", f"{v:.6f}"])
+    print(f"wrote {csv_path}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,1801 @@
+variant,K_shot,val_env,trial,inner_step,query_mse
+Random init (no SSL, no MAML),1,10,0,0,1.1570
+Random init (no SSL, no MAML),1,10,0,1,1.0634
+Random init (no SSL, no MAML),1,10,0,2,1.0264
+Random init (no SSL, no MAML),1,10,0,3,1.0150
+Random init (no SSL, no MAML),1,10,0,4,1.0108
+Random init (no SSL, no MAML),1,10,0,5,1.0088
+Random init (no SSL, no MAML),1,10,1,0,0.8356
+Random init (no SSL, no MAML),1,10,1,1,0.6126
+Random init (no SSL, no MAML),1,10,1,2,0.6354
+Random init (no SSL, no MAML),1,10,1,3,0.6539
+Random init (no SSL, no MAML),1,10,1,4,0.6627
+Random init (no SSL, no MAML),1,10,1,5,0.6664
+Random init (no SSL, no MAML),1,10,2,0,0.9133
+Random init (no SSL, no MAML),1,10,2,1,0.6585
+Random init (no SSL, no MAML),1,10,2,2,0.6033
+Random init (no SSL, no MAML),1,10,2,3,0.5998
+Random init (no SSL, no MAML),1,10,2,4,0.6043
+Random init (no SSL, no MAML),1,10,2,5,0.6081
+Random init (no SSL, no MAML),1,10,3,0,1.4355
+Random init (no SSL, no MAML),1,10,3,1,1.4137
+Random init (no SSL, no MAML),1,10,3,2,1.3987
+Random init (no SSL, no MAML),1,10,3,3,1.3892
+Random init (no SSL, no MAML),1,10,3,4,1.3834
+Random init (no SSL, no MAML),1,10,3,5,1.3799
+Random init (no SSL, no MAML),1,10,4,0,0.9731
+Random init (no SSL, no MAML),1,10,4,1,0.9735
+Random init (no SSL, no MAML),1,10,4,2,0.9739
+Random init (no SSL, no MAML),1,10,4,3,0.9741
+Random init (no SSL, no MAML),1,10,4,4,0.9743
+Random init (no SSL, no MAML),1,10,4,5,0.9744
+Random init (no SSL, no MAML),1,11,0,0,0.4718
+Random init (no SSL, no MAML),1,11,0,1,0.4236
+Random init (no SSL, no MAML),1,11,0,2,0.4181
+Random init (no SSL, no MAML),1,11,0,3,0.4200
+Random init (no SSL, no MAML),1,11,0,4,0.4219
+Random init (no SSL, no MAML),1,11,0,5,0.4230
+Random init (no SSL, no MAML),1,11,1,0,0.4535
+Random init (no SSL, no MAML),1,11,1,1,0.4116
+Random init (no SSL, no MAML),1,11,1,2,0.4250
+Random init (no SSL, no MAML),1,11,1,3,0.4348
+Random init (no SSL, no MAML),1,11,1,4,0.4392
+Random init (no SSL, no MAML),1,11,1,5,0.4410
+Random init (no SSL, no MAML),1,11,2,0,0.3707
+Random init (no SSL, no MAML),1,11,2,1,0.3678
+Random init (no SSL, no MAML),1,11,2,2,0.3668
+Random init (no SSL, no MAML),1,11,2,3,0.3664
+Random init (no SSL, no MAML),1,11,2,4,0.3662
+Random init (no SSL, no MAML),1,11,2,5,0.3662
+Random init (no SSL, no MAML),1,11,3,0,0.6380
+Random init (no SSL, no MAML),1,11,3,1,0.5186
+Random init (no SSL, no MAML),1,11,3,2,0.5116
+Random init (no SSL, no MAML),1,11,3,3,0.5079
+Random init (no SSL, no MAML),1,11,3,4,0.5061
+Random init (no SSL, no MAML),1,11,3,5,0.5053
+Random init (no SSL, no MAML),1,11,4,0,0.7038
+Random init (no SSL, no MAML),1,11,4,1,0.6206
+Random init (no SSL, no MAML),1,11,4,2,0.5743
+Random init (no SSL, no MAML),1,11,4,3,0.5498
+Random init (no SSL, no MAML),1,11,4,4,0.5371
+Random init (no SSL, no MAML),1,11,4,5,0.5304
+Random init (no SSL, no MAML),1,13,0,0,0.9122
+Random init (no SSL, no MAML),1,13,0,1,0.8748
+Random init (no SSL, no MAML),1,13,0,2,0.8692
+Random init (no SSL, no MAML),1,13,0,3,0.8699
+Random init (no SSL, no MAML),1,13,0,4,0.8716
+Random init (no SSL, no MAML),1,13,0,5,0.8728
+Random init (no SSL, no MAML),1,13,1,0,0.5962
+Random init (no SSL, no MAML),1,13,1,1,0.5330
+Random init (no SSL, no MAML),1,13,1,2,0.5274
+Random init (no SSL, no MAML),1,13,1,3,0.5359
+Random init (no SSL, no MAML),1,13,1,4,0.5440
+Random init (no SSL, no MAML),1,13,1,5,0.5492
+Random init (no SSL, no MAML),1,13,2,0,0.5828
+Random init (no SSL, no MAML),1,13,2,1,0.4822
+Random init (no SSL, no MAML),1,13,2,2,0.4663
+Random init (no SSL, no MAML),1,13,2,3,0.4690
+Random init (no SSL, no MAML),1,13,2,4,0.4729
+Random init (no SSL, no MAML),1,13,2,5,0.4754
+Random init (no SSL, no MAML),1,13,3,0,0.5625
+Random init (no SSL, no MAML),1,13,3,1,0.4581
+Random init (no SSL, no MAML),1,13,3,2,0.4606
+Random init (no SSL, no MAML),1,13,3,3,0.4820
+Random init (no SSL, no MAML),1,13,3,4,0.4849
+Random init (no SSL, no MAML),1,13,3,5,0.4856
+Random init (no SSL, no MAML),1,13,4,0,0.6227
+Random init (no SSL, no MAML),1,13,4,1,0.4294
+Random init (no SSL, no MAML),1,13,4,2,0.4022
+Random init (no SSL, no MAML),1,13,4,3,0.4123
+Random init (no SSL, no MAML),1,13,4,4,0.4181
+Random init (no SSL, no MAML),1,13,4,5,0.4204
+Random init (no SSL, no MAML),1,20,0,0,1.3627
+Random init (no SSL, no MAML),1,20,0,1,1.4472
+Random init (no SSL, no MAML),1,20,0,2,1.4362
+Random init (no SSL, no MAML),1,20,0,3,1.4335
+Random init (no SSL, no MAML),1,20,0,4,1.4327
+Random init (no SSL, no MAML),1,20,0,5,1.4324
+Random init (no SSL, no MAML),1,20,1,0,1.1116
+Random init (no SSL, no MAML),1,20,1,1,1.0989
+Random init (no SSL, no MAML),1,20,1,2,1.0890
+Random init (no SSL, no MAML),1,20,1,3,1.0811
+Random init (no SSL, no MAML),1,20,1,4,1.0750
+Random init (no SSL, no MAML),1,20,1,5,1.0701
+Random init (no SSL, no MAML),1,20,2,0,1.4698
+Random init (no SSL, no MAML),1,20,2,1,1.3251
+Random init (no SSL, no MAML),1,20,2,2,1.3361
+Random init (no SSL, no MAML),1,20,2,3,1.3542
+Random init (no SSL, no MAML),1,20,2,4,1.3647
+Random init (no SSL, no MAML),1,20,2,5,1.3698
+Random init (no SSL, no MAML),1,20,3,0,1.0893
+Random init (no SSL, no MAML),1,20,3,1,1.2548
+Random init (no SSL, no MAML),1,20,3,2,1.3569
+Random init (no SSL, no MAML),1,20,3,3,1.4076
+Random init (no SSL, no MAML),1,20,3,4,1.4308
+Random init (no SSL, no MAML),1,20,3,5,1.4410
+Random init (no SSL, no MAML),1,20,4,0,1.3391
+Random init (no SSL, no MAML),1,20,4,1,1.3599
+Random init (no SSL, no MAML),1,20,4,2,1.3791
+Random init (no SSL, no MAML),1,20,4,3,1.3947
+Random init (no SSL, no MAML),1,20,4,4,1.4065
+Random init (no SSL, no MAML),1,20,4,5,1.4152
+Random init (no SSL, no MAML),2,10,0,0,0.9575
+Random init (no SSL, no MAML),2,10,0,1,0.8111
+Random init (no SSL, no MAML),2,10,0,2,0.7893
+Random init (no SSL, no MAML),2,10,0,3,0.7997
+Random init (no SSL, no MAML),2,10,0,4,0.8160
+Random init (no SSL, no MAML),2,10,0,5,0.8307
+Random init (no SSL, no MAML),2,10,1,0,0.9711
+Random init (no SSL, no MAML),2,10,1,1,0.9043
+Random init (no SSL, no MAML),2,10,1,2,0.8752
+Random init (no SSL, no MAML),2,10,1,3,0.8646
+Random init (no SSL, no MAML),2,10,1,4,0.8630
+Random init (no SSL, no MAML),2,10,1,5,0.8655
+Random init (no SSL, no MAML),2,10,2,0,0.8005
+Random init (no SSL, no MAML),2,10,2,1,0.5473
+Random init (no SSL, no MAML),2,10,2,2,0.4094
+Random init (no SSL, no MAML),2,10,2,3,0.3389
+Random init (no SSL, no MAML),2,10,2,4,0.3078
+Random init (no SSL, no MAML),2,10,2,5,0.2984
+Random init (no SSL, no MAML),2,10,3,0,1.0078
+Random init (no SSL, no MAML),2,10,3,1,0.9223
+Random init (no SSL, no MAML),2,10,3,2,0.8813
+Random init (no SSL, no MAML),2,10,3,3,0.8636
+Random init (no SSL, no MAML),2,10,3,4,0.8578
+Random init (no SSL, no MAML),2,10,3,5,0.8577
+Random init (no SSL, no MAML),2,10,4,0,0.9681
+Random init (no SSL, no MAML),2,10,4,1,0.7930
+Random init (no SSL, no MAML),2,10,4,2,0.7480
+Random init (no SSL, no MAML),2,10,4,3,0.7428
+Random init (no SSL, no MAML),2,10,4,4,0.7484
+Random init (no SSL, no MAML),2,10,4,5,0.7556
+Random init (no SSL, no MAML),2,11,0,0,0.4550
+Random init (no SSL, no MAML),2,11,0,1,0.4354
+Random init (no SSL, no MAML),2,11,0,2,0.4290
+Random init (no SSL, no MAML),2,11,0,3,0.4201
+Random init (no SSL, no MAML),2,11,0,4,0.4085
+Random init (no SSL, no MAML),2,11,0,5,0.3961
+Random init (no SSL, no MAML),2,11,1,0,0.6169
+Random init (no SSL, no MAML),2,11,1,1,0.5868
+Random init (no SSL, no MAML),2,11,1,2,0.5676
+Random init (no SSL, no MAML),2,11,1,3,0.5519
+Random init (no SSL, no MAML),2,11,1,4,0.5382
+Random init (no SSL, no MAML),2,11,1,5,0.5263
+Random init (no SSL, no MAML),2,11,2,0,0.5107
+Random init (no SSL, no MAML),2,11,2,1,0.4631
+Random init (no SSL, no MAML),2,11,2,2,0.4338
+Random init (no SSL, no MAML),2,11,2,3,0.4154
+Random init (no SSL, no MAML),2,11,2,4,0.4037
+Random init (no SSL, no MAML),2,11,2,5,0.3963
+Random init (no SSL, no MAML),2,11,3,0,0.6429
+Random init (no SSL, no MAML),2,11,3,1,0.5747
+Random init (no SSL, no MAML),2,11,3,2,0.5400
+Random init (no SSL, no MAML),2,11,3,3,0.5230
+Random init (no SSL, no MAML),2,11,3,4,0.5156
+Random init (no SSL, no MAML),2,11,3,5,0.5134
+Random init (no SSL, no MAML),2,11,4,0,0.3670
+Random init (no SSL, no MAML),2,11,4,1,0.3635
+Random init (no SSL, no MAML),2,11,4,2,0.3840
+Random init (no SSL, no MAML),2,11,4,3,0.4122
+Random init (no SSL, no MAML),2,11,4,4,0.4397
+Random init (no SSL, no MAML),2,11,4,5,0.4629
+Random init (no SSL, no MAML),2,13,0,0,0.7056
+Random init (no SSL, no MAML),2,13,0,1,0.5123
+Random init (no SSL, no MAML),2,13,0,2,0.4431
+Random init (no SSL, no MAML),2,13,0,3,0.4355
+Random init (no SSL, no MAML),2,13,0,4,0.4318
+Random init (no SSL, no MAML),2,13,0,5,0.4290
+Random init (no SSL, no MAML),2,13,1,0,0.5512
+Random init (no SSL, no MAML),2,13,1,1,0.4321
+Random init (no SSL, no MAML),2,13,1,2,0.4206
+Random init (no SSL, no MAML),2,13,1,3,0.4200
+Random init (no SSL, no MAML),2,13,1,4,0.4220
+Random init (no SSL, no MAML),2,13,1,5,0.4240
+Random init (no SSL, no MAML),2,13,2,0,0.7281
+Random init (no SSL, no MAML),2,13,2,1,0.5898
+Random init (no SSL, no MAML),2,13,2,2,0.5076
+Random init (no SSL, no MAML),2,13,2,3,0.4643
+Random init (no SSL, no MAML),2,13,2,4,0.4408
+Random init (no SSL, no MAML),2,13,2,5,0.4273
+Random init (no SSL, no MAML),2,13,3,0,0.8764
+Random init (no SSL, no MAML),2,13,3,1,0.6949
+Random init (no SSL, no MAML),2,13,3,2,0.6742
+Random init (no SSL, no MAML),2,13,3,3,0.6691
+Random init (no SSL, no MAML),2,13,3,4,0.6668
+Random init (no SSL, no MAML),2,13,3,5,0.6656
+Random init (no SSL, no MAML),2,13,4,0,0.6832
+Random init (no SSL, no MAML),2,13,4,1,0.6560
+Random init (no SSL, no MAML),2,13,4,2,0.6343
+Random init (no SSL, no MAML),2,13,4,3,0.6176
+Random init (no SSL, no MAML),2,13,4,4,0.6049
+Random init (no SSL, no MAML),2,13,4,5,0.5956
+Random init (no SSL, no MAML),2,20,0,0,1.5294
+Random init (no SSL, no MAML),2,20,0,1,1.5128
+Random init (no SSL, no MAML),2,20,0,2,1.5039
+Random init (no SSL, no MAML),2,20,0,3,1.5003
+Random init (no SSL, no MAML),2,20,0,4,1.5002
+Random init (no SSL, no MAML),2,20,0,5,1.5021
+Random init (no SSL, no MAML),2,20,1,0,1.4251
+Random init (no SSL, no MAML),2,20,1,1,1.2326
+Random init (no SSL, no MAML),2,20,1,2,1.1598
+Random init (no SSL, no MAML),2,20,1,3,1.1417
+Random init (no SSL, no MAML),2,20,1,4,1.1472
+Random init (no SSL, no MAML),2,20,1,5,1.1615
+Random init (no SSL, no MAML),2,20,2,0,1.3492
+Random init (no SSL, no MAML),2,20,2,1,0.9380
+Random init (no SSL, no MAML),2,20,2,2,0.8322
+Random init (no SSL, no MAML),2,20,2,3,0.8003
+Random init (no SSL, no MAML),2,20,2,4,0.7913
+Random init (no SSL, no MAML),2,20,2,5,0.7925
+Random init (no SSL, no MAML),2,20,3,0,1.7949
+Random init (no SSL, no MAML),2,20,3,1,1.5984
+Random init (no SSL, no MAML),2,20,3,2,1.5007
+Random init (no SSL, no MAML),2,20,3,3,1.4444
+Random init (no SSL, no MAML),2,20,3,4,1.4090
+Random init (no SSL, no MAML),2,20,3,5,1.3857
+Random init (no SSL, no MAML),2,20,4,0,0.9217
+Random init (no SSL, no MAML),2,20,4,1,0.8467
+Random init (no SSL, no MAML),2,20,4,2,0.8628
+Random init (no SSL, no MAML),2,20,4,3,0.8883
+Random init (no SSL, no MAML),2,20,4,4,0.9083
+Random init (no SSL, no MAML),2,20,4,5,0.9220
+Random init (no SSL, no MAML),5,10,0,0,1.1949
+Random init (no SSL, no MAML),5,10,0,1,0.7762
+Random init (no SSL, no MAML),5,10,0,2,0.6203
+Random init (no SSL, no MAML),5,10,0,3,0.5546
+Random init (no SSL, no MAML),5,10,0,4,0.5242
+Random init (no SSL, no MAML),5,10,0,5,0.5080
+Random init (no SSL, no MAML),5,10,1,0,1.1837
+Random init (no SSL, no MAML),5,10,1,1,1.0696
+Random init (no SSL, no MAML),5,10,1,2,0.9856
+Random init (no SSL, no MAML),5,10,1,3,0.9245
+Random init (no SSL, no MAML),5,10,1,4,0.8814
+Random init (no SSL, no MAML),5,10,1,5,0.8520
+Random init (no SSL, no MAML),5,10,2,0,1.1698
+Random init (no SSL, no MAML),5,10,2,1,1.0851
+Random init (no SSL, no MAML),5,10,2,2,1.0518
+Random init (no SSL, no MAML),5,10,2,3,1.0366
+Random init (no SSL, no MAML),5,10,2,4,1.0270
+Random init (no SSL, no MAML),5,10,2,5,1.0188
+Random init (no SSL, no MAML),5,10,3,0,1.1680
+Random init (no SSL, no MAML),5,10,3,1,0.9937
+Random init (no SSL, no MAML),5,10,3,2,0.8996
+Random init (no SSL, no MAML),5,10,3,3,0.8454
+Random init (no SSL, no MAML),5,10,3,4,0.8122
+Random init (no SSL, no MAML),5,10,3,5,0.7904
+Random init (no SSL, no MAML),5,10,4,0,1.0570
+Random init (no SSL, no MAML),5,10,4,1,0.9807
+Random init (no SSL, no MAML),5,10,4,2,0.9409
+Random init (no SSL, no MAML),5,10,4,3,0.9191
+Random init (no SSL, no MAML),5,10,4,4,0.9055
+Random init (no SSL, no MAML),5,10,4,5,0.8955
+Random init (no SSL, no MAML),5,11,0,0,0.5131
+Random init (no SSL, no MAML),5,11,0,1,0.4414
+Random init (no SSL, no MAML),5,11,0,2,0.3902
+Random init (no SSL, no MAML),5,11,0,3,0.3520
+Random init (no SSL, no MAML),5,11,0,4,0.3223
+Random init (no SSL, no MAML),5,11,0,5,0.2984
+Random init (no SSL, no MAML),5,11,1,0,0.8961
+Random init (no SSL, no MAML),5,11,1,1,0.8655
+Random init (no SSL, no MAML),5,11,1,2,0.8382
+Random init (no SSL, no MAML),5,11,1,3,0.8136
+Random init (no SSL, no MAML),5,11,1,4,0.7914
+Random init (no SSL, no MAML),5,11,1,5,0.7714
+Random init (no SSL, no MAML),5,11,2,0,0.7629
+Random init (no SSL, no MAML),5,11,2,1,0.7211
+Random init (no SSL, no MAML),5,11,2,2,0.6953
+Random init (no SSL, no MAML),5,11,2,3,0.6745
+Random init (no SSL, no MAML),5,11,2,4,0.6550
+Random init (no SSL, no MAML),5,11,2,5,0.6361
+Random init (no SSL, no MAML),5,11,3,0,0.8527
+Random init (no SSL, no MAML),5,11,3,1,0.8060
+Random init (no SSL, no MAML),5,11,3,2,0.7774
+Random init (no SSL, no MAML),5,11,3,3,0.7615
+Random init (no SSL, no MAML),5,11,3,4,0.7522
+Random init (no SSL, no MAML),5,11,3,5,0.7462
+Random init (no SSL, no MAML),5,11,4,0,0.7845
+Random init (no SSL, no MAML),5,11,4,1,0.7361
+Random init (no SSL, no MAML),5,11,4,2,0.6963
+Random init (no SSL, no MAML),5,11,4,3,0.6636
+Random init (no SSL, no MAML),5,11,4,4,0.6367
+Random init (no SSL, no MAML),5,11,4,5,0.6146
+Random init (no SSL, no MAML),5,13,0,0,0.6741
+Random init (no SSL, no MAML),5,13,0,1,0.4836
+Random init (no SSL, no MAML),5,13,0,2,0.4004
+Random init (no SSL, no MAML),5,13,0,3,0.3624
+Random init (no SSL, no MAML),5,13,0,4,0.3393
+Random init (no SSL, no MAML),5,13,0,5,0.3207
+Random init (no SSL, no MAML),5,13,1,0,0.5309
+Random init (no SSL, no MAML),5,13,1,1,0.4479
+Random init (no SSL, no MAML),5,13,1,2,0.3841
+Random init (no SSL, no MAML),5,13,1,3,0.3346
+Random init (no SSL, no MAML),5,13,1,4,0.2958
+Random init (no SSL, no MAML),5,13,1,5,0.2650
+Random init (no SSL, no MAML),5,13,2,0,0.6685
+Random init (no SSL, no MAML),5,13,2,1,0.5119
+Random init (no SSL, no MAML),5,13,2,2,0.4201
+Random init (no SSL, no MAML),5,13,2,3,0.3682
+Random init (no SSL, no MAML),5,13,2,4,0.3372
+Random init (no SSL, no MAML),5,13,2,5,0.3175
+Random init (no SSL, no MAML),5,13,3,0,0.7550
+Random init (no SSL, no MAML),5,13,3,1,0.6525
+Random init (no SSL, no MAML),5,13,3,2,0.5786
+Random init (no SSL, no MAML),5,13,3,3,0.5222
+Random init (no SSL, no MAML),5,13,3,4,0.4774
+Random init (no SSL, no MAML),5,13,3,5,0.4415
+Random init (no SSL, no MAML),5,13,4,0,0.6506
+Random init (no SSL, no MAML),5,13,4,1,0.5566
+Random init (no SSL, no MAML),5,13,4,2,0.4987
+Random init (no SSL, no MAML),5,13,4,3,0.4638
+Random init (no SSL, no MAML),5,13,4,4,0.4399
+Random init (no SSL, no MAML),5,13,4,5,0.4219
+Random init (no SSL, no MAML),5,20,0,0,1.4442
+Random init (no SSL, no MAML),5,20,0,1,1.1595
+Random init (no SSL, no MAML),5,20,0,2,1.0329
+Random init (no SSL, no MAML),5,20,0,3,0.9651
+Random init (no SSL, no MAML),5,20,0,4,0.9211
+Random init (no SSL, no MAML),5,20,0,5,0.8882
+Random init (no SSL, no MAML),5,20,1,0,1.4063
+Random init (no SSL, no MAML),5,20,1,1,1.1384
+Random init (no SSL, no MAML),5,20,1,2,1.0534
+Random init (no SSL, no MAML),5,20,1,3,1.0360
+Random init (no SSL, no MAML),5,20,1,4,1.0398
+Random init (no SSL, no MAML),5,20,1,5,1.0496
+Random init (no SSL, no MAML),5,20,2,0,1.0062
+Random init (no SSL, no MAML),5,20,2,1,0.9533
+Random init (no SSL, no MAML),5,20,2,2,0.9426
+Random init (no SSL, no MAML),5,20,2,3,0.9396
+Random init (no SSL, no MAML),5,20,2,4,0.9360
+Random init (no SSL, no MAML),5,20,2,5,0.9313
+Random init (no SSL, no MAML),5,20,3,0,1.3836
+Random init (no SSL, no MAML),5,20,3,1,1.1295
+Random init (no SSL, no MAML),5,20,3,2,1.0046
+Random init (no SSL, no MAML),5,20,3,3,0.9414
+Random init (no SSL, no MAML),5,20,3,4,0.9096
+Random init (no SSL, no MAML),5,20,3,5,0.8948
+Random init (no SSL, no MAML),5,20,4,0,1.1799
+Random init (no SSL, no MAML),5,20,4,1,1.0306
+Random init (no SSL, no MAML),5,20,4,2,0.9412
+Random init (no SSL, no MAML),5,20,4,3,0.8856
+Random init (no SSL, no MAML),5,20,4,4,0.8506
+Random init (no SSL, no MAML),5,20,4,5,0.8289
+Random init (no SSL, no MAML),10,10,0,0,1.0343
+Random init (no SSL, no MAML),10,10,0,1,0.8687
+Random init (no SSL, no MAML),10,10,0,2,0.7764
+Random init (no SSL, no MAML),10,10,0,3,0.7236
+Random init (no SSL, no MAML),10,10,0,4,0.6929
+Random init (no SSL, no MAML),10,10,0,5,0.6746
+Random init (no SSL, no MAML),10,10,1,0,1.0589
+Random init (no SSL, no MAML),10,10,1,1,0.9338
+Random init (no SSL, no MAML),10,10,1,2,0.8437
+Random init (no SSL, no MAML),10,10,1,3,0.7787
+Random init (no SSL, no MAML),10,10,1,4,0.7316
+Random init (no SSL, no MAML),10,10,1,5,0.6973
+Random init (no SSL, no MAML),10,10,2,0,1.1525
+Random init (no SSL, no MAML),10,10,2,1,0.9242
+Random init (no SSL, no MAML),10,10,2,2,0.7912
+Random init (no SSL, no MAML),10,10,2,3,0.7111
+Random init (no SSL, no MAML),10,10,2,4,0.6599
+Random init (no SSL, no MAML),10,10,2,5,0.6250
+Random init (no SSL, no MAML),10,10,3,0,1.2343
+Random init (no SSL, no MAML),10,10,3,1,1.0086
+Random init (no SSL, no MAML),10,10,3,2,0.8615
+Random init (no SSL, no MAML),10,10,3,3,0.7675
+Random init (no SSL, no MAML),10,10,3,4,0.7088
+Random init (no SSL, no MAML),10,10,3,5,0.6734
+Random init (no SSL, no MAML),10,10,4,0,1.0756
+Random init (no SSL, no MAML),10,10,4,1,0.8859
+Random init (no SSL, no MAML),10,10,4,2,0.7812
+Random init (no SSL, no MAML),10,10,4,3,0.7224
+Random init (no SSL, no MAML),10,10,4,4,0.6875
+Random init (no SSL, no MAML),10,10,4,5,0.6650
+Random init (no SSL, no MAML),10,11,0,0,0.5003
+Random init (no SSL, no MAML),10,11,0,1,0.4268
+Random init (no SSL, no MAML),10,11,0,2,0.3703
+Random init (no SSL, no MAML),10,11,0,3,0.3256
+Random init (no SSL, no MAML),10,11,0,4,0.2900
+Random init (no SSL, no MAML),10,11,0,5,0.2611
+Random init (no SSL, no MAML),10,11,1,0,0.7516
+Random init (no SSL, no MAML),10,11,1,1,0.6579
+Random init (no SSL, no MAML),10,11,1,2,0.5913
+Random init (no SSL, no MAML),10,11,1,3,0.5422
+Random init (no SSL, no MAML),10,11,1,4,0.5045
+Random init (no SSL, no MAML),10,11,1,5,0.4745
+Random init (no SSL, no MAML),10,11,2,0,0.6488
+Random init (no SSL, no MAML),10,11,2,1,0.5711
+Random init (no SSL, no MAML),10,11,2,2,0.5233
+Random init (no SSL, no MAML),10,11,2,3,0.4927
+Random init (no SSL, no MAML),10,11,2,4,0.4717
+Random init (no SSL, no MAML),10,11,2,5,0.4565
+Random init (no SSL, no MAML),10,11,3,0,0.5575
+Random init (no SSL, no MAML),10,11,3,1,0.5305
+Random init (no SSL, no MAML),10,11,3,2,0.5064
+Random init (no SSL, no MAML),10,11,3,3,0.4845
+Random init (no SSL, no MAML),10,11,3,4,0.4645
+Random init (no SSL, no MAML),10,11,3,5,0.4462
+Random init (no SSL, no MAML),10,11,4,0,0.7197
+Random init (no SSL, no MAML),10,11,4,1,0.6488
+Random init (no SSL, no MAML),10,11,4,2,0.5926
+Random init (no SSL, no MAML),10,11,4,3,0.5478
+Random init (no SSL, no MAML),10,11,4,4,0.5114
+Random init (no SSL, no MAML),10,11,4,5,0.4814
+Random init (no SSL, no MAML),10,13,0,0,0.6381
+Random init (no SSL, no MAML),10,13,0,1,0.5207
+Random init (no SSL, no MAML),10,13,0,2,0.4394
+Random init (no SSL, no MAML),10,13,0,3,0.3809
+Random init (no SSL, no MAML),10,13,0,4,0.3358
+Random init (no SSL, no MAML),10,13,0,5,0.2998
+Random init (no SSL, no MAML),10,13,1,0,0.6579
+Random init (no SSL, no MAML),10,13,1,1,0.5498
+Random init (no SSL, no MAML),10,13,1,2,0.4681
+Random init (no SSL, no MAML),10,13,1,3,0.4063
+Random init (no SSL, no MAML),10,13,1,4,0.3606
+Random init (no SSL, no MAML),10,13,1,5,0.3273
+Random init (no SSL, no MAML),10,13,2,0,0.4981
+Random init (no SSL, no MAML),10,13,2,1,0.4261
+Random init (no SSL, no MAML),10,13,2,2,0.3786
+Random init (no SSL, no MAML),10,13,2,3,0.3464
+Random init (no SSL, no MAML),10,13,2,4,0.3223
+Random init (no SSL, no MAML),10,13,2,5,0.3035
+Random init (no SSL, no MAML),10,13,3,0,0.7785
+Random init (no SSL, no MAML),10,13,3,1,0.6428
+Random init (no SSL, no MAML),10,13,3,2,0.5493
+Random init (no SSL, no MAML),10,13,3,3,0.4823
+Random init (no SSL, no MAML),10,13,3,4,0.4380
+Random init (no SSL, no MAML),10,13,3,5,0.4050
+Random init (no SSL, no MAML),10,13,4,0,0.8610
+Random init (no SSL, no MAML),10,13,4,1,0.7516
+Random init (no SSL, no MAML),10,13,4,2,0.6712
+Random init (no SSL, no MAML),10,13,4,3,0.6083
+Random init (no SSL, no MAML),10,13,4,4,0.5603
+Random init (no SSL, no MAML),10,13,4,5,0.5211
+Random init (no SSL, no MAML),10,20,0,0,1.1146
+Random init (no SSL, no MAML),10,20,0,1,0.9601
+Random init (no SSL, no MAML),10,20,0,2,0.8691
+Random init (no SSL, no MAML),10,20,0,3,0.8164
+Random init (no SSL, no MAML),10,20,0,4,0.7870
+Random init (no SSL, no MAML),10,20,0,5,0.7720
+Random init (no SSL, no MAML),10,20,1,0,1.2857
+Random init (no SSL, no MAML),10,20,1,1,1.1562
+Random init (no SSL, no MAML),10,20,1,2,1.0569
+Random init (no SSL, no MAML),10,20,1,3,0.9803
+Random init (no SSL, no MAML),10,20,1,4,0.9210
+Random init (no SSL, no MAML),10,20,1,5,0.8750
+Random init (no SSL, no MAML),10,20,2,0,2.1278
+Random init (no SSL, no MAML),10,20,2,1,1.8469
+Random init (no SSL, no MAML),10,20,2,2,1.6433
+Random init (no SSL, no MAML),10,20,2,3,1.4927
+Random init (no SSL, no MAML),10,20,2,4,1.3792
+Random init (no SSL, no MAML),10,20,2,5,1.2920
+Random init (no SSL, no MAML),10,20,3,0,1.0107
+Random init (no SSL, no MAML),10,20,3,1,0.9721
+Random init (no SSL, no MAML),10,20,3,2,0.9530
+Random init (no SSL, no MAML),10,20,3,3,0.9444
+Random init (no SSL, no MAML),10,20,3,4,0.9415
+Random init (no SSL, no MAML),10,20,3,5,0.9411
+Random init (no SSL, no MAML),10,20,4,0,1.6550
+Random init (no SSL, no MAML),10,20,4,1,1.4326
+Random init (no SSL, no MAML),10,20,4,2,1.2855
+Random init (no SSL, no MAML),10,20,4,3,1.1865
+Random init (no SSL, no MAML),10,20,4,4,1.1185
+Random init (no SSL, no MAML),10,20,4,5,1.0708
+Random init (no SSL, no MAML),20,10,0,0,1.2186
+Random init (no SSL, no MAML),20,10,0,1,1.0137
+Random init (no SSL, no MAML),20,10,0,2,0.8736
+Random init (no SSL, no MAML),20,10,0,3,0.7774
+Random init (no SSL, no MAML),20,10,0,4,0.7104
+Random init (no SSL, no MAML),20,10,0,5,0.6634
+Random init (no SSL, no MAML),20,10,1,0,1.0138
+Random init (no SSL, no MAML),20,10,1,1,0.7696
+Random init (no SSL, no MAML),20,10,1,2,0.6377
+Random init (no SSL, no MAML),20,10,1,3,0.5614
+Random init (no SSL, no MAML),20,10,1,4,0.5141
+Random init (no SSL, no MAML),20,10,1,5,0.4830
+Random init (no SSL, no MAML),20,10,2,0,1.1036
+Random init (no SSL, no MAML),20,10,2,1,0.9434
+Random init (no SSL, no MAML),20,10,2,2,0.8396
+Random init (no SSL, no MAML),20,10,2,3,0.7718
+Random init (no SSL, no MAML),20,10,2,4,0.7294
+Random init (no SSL, no MAML),20,10,2,5,0.7039
+Random init (no SSL, no MAML),20,10,3,0,0.8667
+Random init (no SSL, no MAML),20,10,3,1,0.7268
+Random init (no SSL, no MAML),20,10,3,2,0.6429
+Random init (no SSL, no MAML),20,10,3,3,0.5919
+Random init (no SSL, no MAML),20,10,3,4,0.5595
+Random init (no SSL, no MAML),20,10,3,5,0.5372
+Random init (no SSL, no MAML),20,10,4,0,0.9393
+Random init (no SSL, no MAML),20,10,4,1,0.7243
+Random init (no SSL, no MAML),20,10,4,2,0.5797
+Random init (no SSL, no MAML),20,10,4,3,0.4835
+Random init (no SSL, no MAML),20,10,4,4,0.4198
+Random init (no SSL, no MAML),20,10,4,5,0.3773
+Random init (no SSL, no MAML),20,11,0,0,0.2671
+Random init (no SSL, no MAML),20,11,0,1,0.2266
+Random init (no SSL, no MAML),20,11,0,2,0.1973
+Random init (no SSL, no MAML),20,11,0,3,0.1756
+Random init (no SSL, no MAML),20,11,0,4,0.1595
+Random init (no SSL, no MAML),20,11,0,5,0.1474
+Random init (no SSL, no MAML),20,11,1,0,0.4052
+Random init (no SSL, no MAML),20,11,1,1,0.3420
+Random init (no SSL, no MAML),20,11,1,2,0.2989
+Random init (no SSL, no MAML),20,11,1,3,0.2678
+Random init (no SSL, no MAML),20,11,1,4,0.2443
+Random init (no SSL, no MAML),20,11,1,5,0.2260
+Random init (no SSL, no MAML),20,11,2,0,0.5795
+Random init (no SSL, no MAML),20,11,2,1,0.5080
+Random init (no SSL, no MAML),20,11,2,2,0.4536
+Random init (no SSL, no MAML),20,11,2,3,0.4106
+Random init (no SSL, no MAML),20,11,2,4,0.3757
+Random init (no SSL, no MAML),20,11,2,5,0.3467
+Random init (no SSL, no MAML),20,11,3,0,0.3782
+Random init (no SSL, no MAML),20,11,3,1,0.3413
+Random init (no SSL, no MAML),20,11,3,2,0.3120
+Random init (no SSL, no MAML),20,11,3,3,0.2886
+Random init (no SSL, no MAML),20,11,3,4,0.2701
+Random init (no SSL, no MAML),20,11,3,5,0.2553
+Random init (no SSL, no MAML),20,11,4,0,0.7628
+Random init (no SSL, no MAML),20,11,4,1,0.6697
+Random init (no SSL, no MAML),20,11,4,2,0.6059
+Random init (no SSL, no MAML),20,11,4,3,0.5594
+Random init (no SSL, no MAML),20,11,4,4,0.5231
+Random init (no SSL, no MAML),20,11,4,5,0.4936
+Random init (no SSL, no MAML),20,13,0,0,0.4994
+Random init (no SSL, no MAML),20,13,0,1,0.4119
+Random init (no SSL, no MAML),20,13,0,2,0.3457
+Random init (no SSL, no MAML),20,13,0,3,0.2999
+Random init (no SSL, no MAML),20,13,0,4,0.2663
+Random init (no SSL, no MAML),20,13,0,5,0.2403
+Random init (no SSL, no MAML),20,13,1,0,0.6338
+Random init (no SSL, no MAML),20,13,1,1,0.4993
+Random init (no SSL, no MAML),20,13,1,2,0.4107
+Random init (no SSL, no MAML),20,13,1,3,0.3525
+Random init (no SSL, no MAML),20,13,1,4,0.3112
+Random init (no SSL, no MAML),20,13,1,5,0.2788
+Random init (no SSL, no MAML),20,13,2,0,0.5701
+Random init (no SSL, no MAML),20,13,2,1,0.4520
+Random init (no SSL, no MAML),20,13,2,2,0.3683
+Random init (no SSL, no MAML),20,13,2,3,0.3096
+Random init (no SSL, no MAML),20,13,2,4,0.2683
+Random init (no SSL, no MAML),20,13,2,5,0.2376
+Random init (no SSL, no MAML),20,13,3,0,0.6255
+Random init (no SSL, no MAML),20,13,3,1,0.5012
+Random init (no SSL, no MAML),20,13,3,2,0.4158
+Random init (no SSL, no MAML),20,13,3,3,0.3552
+Random init (no SSL, no MAML),20,13,3,4,0.3116
+Random init (no SSL, no MAML),20,13,3,5,0.2781
+Random init (no SSL, no MAML),20,13,4,0,0.6304
+Random init (no SSL, no MAML),20,13,4,1,0.5318
+Random init (no SSL, no MAML),20,13,4,2,0.4667
+Random init (no SSL, no MAML),20,13,4,3,0.4207
+Random init (no SSL, no MAML),20,13,4,4,0.3873
+Random init (no SSL, no MAML),20,13,4,5,0.3609
+Random init (no SSL, no MAML),20,20,0,0,1.3643
+Random init (no SSL, no MAML),20,20,0,1,1.2068
+Random init (no SSL, no MAML),20,20,0,2,1.0936
+Random init (no SSL, no MAML),20,20,0,3,1.0082
+Random init (no SSL, no MAML),20,20,0,4,0.9414
+Random init (no SSL, no MAML),20,20,0,5,0.8877
+Random init (no SSL, no MAML),20,20,1,0,1.0031
+Random init (no SSL, no MAML),20,20,1,1,0.8376
+Random init (no SSL, no MAML),20,20,1,2,0.7258
+Random init (no SSL, no MAML),20,20,1,3,0.6506
+Random init (no SSL, no MAML),20,20,1,4,0.6003
+Random init (no SSL, no MAML),20,20,1,5,0.5670
+Random init (no SSL, no MAML),20,20,2,0,1.4467
+Random init (no SSL, no MAML),20,20,2,1,1.3017
+Random init (no SSL, no MAML),20,20,2,2,1.2027
+Random init (no SSL, no MAML),20,20,2,3,1.1339
+Random init (no SSL, no MAML),20,20,2,4,1.0852
+Random init (no SSL, no MAML),20,20,2,5,1.0499
+Random init (no SSL, no MAML),20,20,3,0,0.9299
+Random init (no SSL, no MAML),20,20,3,1,0.8219
+Random init (no SSL, no MAML),20,20,3,2,0.7701
+Random init (no SSL, no MAML),20,20,3,3,0.7461
+Random init (no SSL, no MAML),20,20,3,4,0.7353
+Random init (no SSL, no MAML),20,20,3,5,0.7305
+Random init (no SSL, no MAML),20,20,4,0,1.4517
+Random init (no SSL, no MAML),20,20,4,1,1.2739
+Random init (no SSL, no MAML),20,20,4,2,1.1886
+Random init (no SSL, no MAML),20,20,4,3,1.1341
+Random init (no SSL, no MAML),20,20,4,4,1.0901
+Random init (no SSL, no MAML),20,20,4,5,1.0502
+Tier 2 (SSL + disentangle),1,10,0,0,4.9610
+Tier 2 (SSL + disentangle),1,10,0,1,3.9492
+Tier 2 (SSL + disentangle),1,10,0,2,3.7829
+Tier 2 (SSL + disentangle),1,10,0,3,4.0379
+Tier 2 (SSL + disentangle),1,10,0,4,4.1418
+Tier 2 (SSL + disentangle),1,10,0,5,4.1572
+Tier 2 (SSL + disentangle),1,10,1,0,5.4289
+Tier 2 (SSL + disentangle),1,10,1,1,5.1042
+Tier 2 (SSL + disentangle),1,10,1,2,5.0481
+Tier 2 (SSL + disentangle),1,10,1,3,5.0828
+Tier 2 (SSL + disentangle),1,10,1,4,5.1183
+Tier 2 (SSL + disentangle),1,10,1,5,5.1381
+Tier 2 (SSL + disentangle),1,10,2,0,4.3300
+Tier 2 (SSL + disentangle),1,10,2,1,3.3533
+Tier 2 (SSL + disentangle),1,10,2,2,3.7073
+Tier 2 (SSL + disentangle),1,10,2,3,4.3857
+Tier 2 (SSL + disentangle),1,10,2,4,4.8107
+Tier 2 (SSL + disentangle),1,10,2,5,4.9880
+Tier 2 (SSL + disentangle),1,10,3,0,3.0469
+Tier 2 (SSL + disentangle),1,10,3,1,2.1352
+Tier 2 (SSL + disentangle),1,10,3,2,2.3876
+Tier 2 (SSL + disentangle),1,10,3,3,2.9239
+Tier 2 (SSL + disentangle),1,10,3,4,3.3005
+Tier 2 (SSL + disentangle),1,10,3,5,3.4715
+Tier 2 (SSL + disentangle),1,10,4,0,4.0436
+Tier 2 (SSL + disentangle),1,10,4,1,3.7654
+Tier 2 (SSL + disentangle),1,10,4,2,4.1769
+Tier 2 (SSL + disentangle),1,10,4,3,4.5899
+Tier 2 (SSL + disentangle),1,10,4,4,4.8744
+Tier 2 (SSL + disentangle),1,10,4,5,5.0298
+Tier 2 (SSL + disentangle),1,11,0,0,3.7064
+Tier 2 (SSL + disentangle),1,11,0,1,3.0720
+Tier 2 (SSL + disentangle),1,11,0,2,2.7412
+Tier 2 (SSL + disentangle),1,11,0,3,2.6321
+Tier 2 (SSL + disentangle),1,11,0,4,2.6650
+Tier 2 (SSL + disentangle),1,11,0,5,2.7484
+Tier 2 (SSL + disentangle),1,11,1,0,3.5317
+Tier 2 (SSL + disentangle),1,11,1,1,3.4742
+Tier 2 (SSL + disentangle),1,11,1,2,3.4203
+Tier 2 (SSL + disentangle),1,11,1,3,3.3833
+Tier 2 (SSL + disentangle),1,11,1,4,3.3645
+Tier 2 (SSL + disentangle),1,11,1,5,3.3571
+Tier 2 (SSL + disentangle),1,11,2,0,3.8535
+Tier 2 (SSL + disentangle),1,11,2,1,4.0556
+Tier 2 (SSL + disentangle),1,11,2,2,4.4998
+Tier 2 (SSL + disentangle),1,11,2,3,4.7913
+Tier 2 (SSL + disentangle),1,11,2,4,4.8953
+Tier 2 (SSL + disentangle),1,11,2,5,4.9237
+Tier 2 (SSL + disentangle),1,11,3,0,3.8312
+Tier 2 (SSL + disentangle),1,11,3,1,3.8845
+Tier 2 (SSL + disentangle),1,11,3,2,4.0481
+Tier 2 (SSL + disentangle),1,11,3,3,4.1896
+Tier 2 (SSL + disentangle),1,11,3,4,4.2785
+Tier 2 (SSL + disentangle),1,11,3,5,4.3265
+Tier 2 (SSL + disentangle),1,11,4,0,3.1841
+Tier 2 (SSL + disentangle),1,11,4,1,3.2306
+Tier 2 (SSL + disentangle),1,11,4,2,3.2777
+Tier 2 (SSL + disentangle),1,11,4,3,3.2862
+Tier 2 (SSL + disentangle),1,11,4,4,3.2841
+Tier 2 (SSL + disentangle),1,11,4,5,3.2825
+Tier 2 (SSL + disentangle),1,13,0,0,1.8485
+Tier 2 (SSL + disentangle),1,13,0,1,1.7738
+Tier 2 (SSL + disentangle),1,13,0,2,1.8191
+Tier 2 (SSL + disentangle),1,13,0,3,1.9094
+Tier 2 (SSL + disentangle),1,13,0,4,2.0097
+Tier 2 (SSL + disentangle),1,13,0,5,2.0982
+Tier 2 (SSL + disentangle),1,13,1,0,2.1063
+Tier 2 (SSL + disentangle),1,13,1,1,2.1796
+Tier 2 (SSL + disentangle),1,13,1,2,2.3516
+Tier 2 (SSL + disentangle),1,13,1,3,2.5203
+Tier 2 (SSL + disentangle),1,13,1,4,2.6412
+Tier 2 (SSL + disentangle),1,13,1,5,2.7133
+Tier 2 (SSL + disentangle),1,13,2,0,2.0711
+Tier 2 (SSL + disentangle),1,13,2,1,2.1079
+Tier 2 (SSL + disentangle),1,13,2,2,2.2394
+Tier 2 (SSL + disentangle),1,13,2,3,2.4001
+Tier 2 (SSL + disentangle),1,13,2,4,2.5506
+Tier 2 (SSL + disentangle),1,13,2,5,2.6692
+Tier 2 (SSL + disentangle),1,13,3,0,1.9680
+Tier 2 (SSL + disentangle),1,13,3,1,1.7905
+Tier 2 (SSL + disentangle),1,13,3,2,1.9179
+Tier 2 (SSL + disentangle),1,13,3,3,2.1462
+Tier 2 (SSL + disentangle),1,13,3,4,2.2885
+Tier 2 (SSL + disentangle),1,13,3,5,2.3521
+Tier 2 (SSL + disentangle),1,13,4,0,1.5341
+Tier 2 (SSL + disentangle),1,13,4,1,1.6662
+Tier 2 (SSL + disentangle),1,13,4,2,1.8741
+Tier 2 (SSL + disentangle),1,13,4,3,2.0530
+Tier 2 (SSL + disentangle),1,13,4,4,2.0829
+Tier 2 (SSL + disentangle),1,13,4,5,2.0969
+Tier 2 (SSL + disentangle),1,20,0,0,4.4428
+Tier 2 (SSL + disentangle),1,20,0,1,3.8814
+Tier 2 (SSL + disentangle),1,20,0,2,3.9011
+Tier 2 (SSL + disentangle),1,20,0,3,4.0883
+Tier 2 (SSL + disentangle),1,20,0,4,4.2586
+Tier 2 (SSL + disentangle),1,20,0,5,4.3678
+Tier 2 (SSL + disentangle),1,20,1,0,4.6543
+Tier 2 (SSL + disentangle),1,20,1,1,4.3172
+Tier 2 (SSL + disentangle),1,20,1,2,4.1557
+Tier 2 (SSL + disentangle),1,20,1,3,4.0784
+Tier 2 (SSL + disentangle),1,20,1,4,4.0389
+Tier 2 (SSL + disentangle),1,20,1,5,4.0192
+Tier 2 (SSL + disentangle),1,20,2,0,4.1709
+Tier 2 (SSL + disentangle),1,20,2,1,5.1223
+Tier 2 (SSL + disentangle),1,20,2,2,5.6518
+Tier 2 (SSL + disentangle),1,20,2,3,5.8835
+Tier 2 (SSL + disentangle),1,20,2,4,5.9228
+Tier 2 (SSL + disentangle),1,20,2,5,5.9282
+Tier 2 (SSL + disentangle),1,20,3,0,4.9825
+Tier 2 (SSL + disentangle),1,20,3,1,5.0471
+Tier 2 (SSL + disentangle),1,20,3,2,5.2039
+Tier 2 (SSL + disentangle),1,20,3,3,5.3042
+Tier 2 (SSL + disentangle),1,20,3,4,5.3479
+Tier 2 (SSL + disentangle),1,20,3,5,5.3653
+Tier 2 (SSL + disentangle),1,20,4,0,3.9125
+Tier 2 (SSL + disentangle),1,20,4,1,3.7121
+Tier 2 (SSL + disentangle),1,20,4,2,3.8561
+Tier 2 (SSL + disentangle),1,20,4,3,3.9891
+Tier 2 (SSL + disentangle),1,20,4,4,4.0343
+Tier 2 (SSL + disentangle),1,20,4,5,4.0456
+Tier 2 (SSL + disentangle),2,10,0,0,5.0375
+Tier 2 (SSL + disentangle),2,10,0,1,4.7895
+Tier 2 (SSL + disentangle),2,10,0,2,4.5008
+Tier 2 (SSL + disentangle),2,10,0,3,4.2013
+Tier 2 (SSL + disentangle),2,10,0,4,3.9384
+Tier 2 (SSL + disentangle),2,10,0,5,3.7279
+Tier 2 (SSL + disentangle),2,10,1,0,5.0156
+Tier 2 (SSL + disentangle),2,10,1,1,4.0657
+Tier 2 (SSL + disentangle),2,10,1,2,3.4063
+Tier 2 (SSL + disentangle),2,10,1,3,2.9836
+Tier 2 (SSL + disentangle),2,10,1,4,2.7326
+Tier 2 (SSL + disentangle),2,10,1,5,2.5923
+Tier 2 (SSL + disentangle),2,10,2,0,4.5243
+Tier 2 (SSL + disentangle),2,10,2,1,4.1709
+Tier 2 (SSL + disentangle),2,10,2,2,3.9120
+Tier 2 (SSL + disentangle),2,10,2,3,3.7391
+Tier 2 (SSL + disentangle),2,10,2,4,3.6363
+Tier 2 (SSL + disentangle),2,10,2,5,3.5846
+Tier 2 (SSL + disentangle),2,10,3,0,4.7112
+Tier 2 (SSL + disentangle),2,10,3,1,4.3600
+Tier 2 (SSL + disentangle),2,10,3,2,4.0843
+Tier 2 (SSL + disentangle),2,10,3,3,3.8877
+Tier 2 (SSL + disentangle),2,10,3,4,3.7591
+Tier 2 (SSL + disentangle),2,10,3,5,3.6797
+Tier 2 (SSL + disentangle),2,10,4,0,4.0752
+Tier 2 (SSL + disentangle),2,10,4,1,3.3728
+Tier 2 (SSL + disentangle),2,10,4,2,3.1260
+Tier 2 (SSL + disentangle),2,10,4,3,2.9959
+Tier 2 (SSL + disentangle),2,10,4,4,2.9023
+Tier 2 (SSL + disentangle),2,10,4,5,2.8248
+Tier 2 (SSL + disentangle),2,11,0,0,3.9201
+Tier 2 (SSL + disentangle),2,11,0,1,3.5237
+Tier 2 (SSL + disentangle),2,11,0,2,3.3835
+Tier 2 (SSL + disentangle),2,11,0,3,3.3906
+Tier 2 (SSL + disentangle),2,11,0,4,3.4626
+Tier 2 (SSL + disentangle),2,11,0,5,3.5441
+Tier 2 (SSL + disentangle),2,11,1,0,3.1903
+Tier 2 (SSL + disentangle),2,11,1,1,2.6026
+Tier 2 (SSL + disentangle),2,11,1,2,2.3154
+Tier 2 (SSL + disentangle),2,11,1,3,2.1972
+Tier 2 (SSL + disentangle),2,11,1,4,2.1801
+Tier 2 (SSL + disentangle),2,11,1,5,2.2098
+Tier 2 (SSL + disentangle),2,11,2,0,3.7475
+Tier 2 (SSL + disentangle),2,11,2,1,3.4678
+Tier 2 (SSL + disentangle),2,11,2,2,3.3091
+Tier 2 (SSL + disentangle),2,11,2,3,3.1731
+Tier 2 (SSL + disentangle),2,11,2,4,3.0468
+Tier 2 (SSL + disentangle),2,11,2,5,2.9424
+Tier 2 (SSL + disentangle),2,11,3,0,3.0855
+Tier 2 (SSL + disentangle),2,11,3,1,2.9652
+Tier 2 (SSL + disentangle),2,11,3,2,2.9111
+Tier 2 (SSL + disentangle),2,11,3,3,2.8853
+Tier 2 (SSL + disentangle),2,11,3,4,2.8734
+Tier 2 (SSL + disentangle),2,11,3,5,2.8696
+Tier 2 (SSL + disentangle),2,11,4,0,3.7849
+Tier 2 (SSL + disentangle),2,11,4,1,3.2138
+Tier 2 (SSL + disentangle),2,11,4,2,2.9007
+Tier 2 (SSL + disentangle),2,11,4,3,2.7238
+Tier 2 (SSL + disentangle),2,11,4,4,2.6404
+Tier 2 (SSL + disentangle),2,11,4,5,2.6160
+Tier 2 (SSL + disentangle),2,13,0,0,2.0674
+Tier 2 (SSL + disentangle),2,13,0,1,1.8408
+Tier 2 (SSL + disentangle),2,13,0,2,1.7416
+Tier 2 (SSL + disentangle),2,13,0,3,1.6970
+Tier 2 (SSL + disentangle),2,13,0,4,1.6671
+Tier 2 (SSL + disentangle),2,13,0,5,1.6379
+Tier 2 (SSL + disentangle),2,13,1,0,2.4676
+Tier 2 (SSL + disentangle),2,13,1,1,2.2793
+Tier 2 (SSL + disentangle),2,13,1,2,2.1618
+Tier 2 (SSL + disentangle),2,13,1,3,2.0851
+Tier 2 (SSL + disentangle),2,13,1,4,2.0337
+Tier 2 (SSL + disentangle),2,13,1,5,1.9982
+Tier 2 (SSL + disentangle),2,13,2,0,1.5287
+Tier 2 (SSL + disentangle),2,13,2,1,1.2929
+Tier 2 (SSL + disentangle),2,13,2,2,1.2899
+Tier 2 (SSL + disentangle),2,13,2,3,1.3142
+Tier 2 (SSL + disentangle),2,13,2,4,1.3062
+Tier 2 (SSL + disentangle),2,13,2,5,1.2762
+Tier 2 (SSL + disentangle),2,13,3,0,2.0565
+Tier 2 (SSL + disentangle),2,13,3,1,1.9382
+Tier 2 (SSL + disentangle),2,13,3,2,1.9741
+Tier 2 (SSL + disentangle),2,13,3,3,1.9851
+Tier 2 (SSL + disentangle),2,13,3,4,1.9587
+Tier 2 (SSL + disentangle),2,13,3,5,1.9223
+Tier 2 (SSL + disentangle),2,13,4,0,2.1671
+Tier 2 (SSL + disentangle),2,13,4,1,1.7042
+Tier 2 (SSL + disentangle),2,13,4,2,1.6317
+Tier 2 (SSL + disentangle),2,13,4,3,1.6708
+Tier 2 (SSL + disentangle),2,13,4,4,1.6878
+Tier 2 (SSL + disentangle),2,13,4,5,1.6710
+Tier 2 (SSL + disentangle),2,20,0,0,4.6771
+Tier 2 (SSL + disentangle),2,20,0,1,4.1839
+Tier 2 (SSL + disentangle),2,20,0,2,3.9024
+Tier 2 (SSL + disentangle),2,20,0,3,3.7274
+Tier 2 (SSL + disentangle),2,20,0,4,3.6064
+Tier 2 (SSL + disentangle),2,20,0,5,3.5143
+Tier 2 (SSL + disentangle),2,20,1,0,5.1629
+Tier 2 (SSL + disentangle),2,20,1,1,4.9763
+Tier 2 (SSL + disentangle),2,20,1,2,4.9291
+Tier 2 (SSL + disentangle),2,20,1,3,4.9573
+Tier 2 (SSL + disentangle),2,20,1,4,5.0142
+Tier 2 (SSL + disentangle),2,20,1,5,5.0721
+Tier 2 (SSL + disentangle),2,20,2,0,4.0497
+Tier 2 (SSL + disentangle),2,20,2,1,3.7166
+Tier 2 (SSL + disentangle),2,20,2,2,3.4993
+Tier 2 (SSL + disentangle),2,20,2,3,3.3492
+Tier 2 (SSL + disentangle),2,20,2,4,3.2451
+Tier 2 (SSL + disentangle),2,20,2,5,3.1740
+Tier 2 (SSL + disentangle),2,20,3,0,5.0121
+Tier 2 (SSL + disentangle),2,20,3,1,4.5483
+Tier 2 (SSL + disentangle),2,20,3,2,4.2658
+Tier 2 (SSL + disentangle),2,20,3,3,4.1061
+Tier 2 (SSL + disentangle),2,20,3,4,4.0185
+Tier 2 (SSL + disentangle),2,20,3,5,3.9678
+Tier 2 (SSL + disentangle),2,20,4,0,5.7155
+Tier 2 (SSL + disentangle),2,20,4,1,5.5571
+Tier 2 (SSL + disentangle),2,20,4,2,5.4198
+Tier 2 (SSL + disentangle),2,20,4,3,5.2957
+Tier 2 (SSL + disentangle),2,20,4,4,5.1819
+Tier 2 (SSL + disentangle),2,20,4,5,5.0772
+Tier 2 (SSL + disentangle),5,10,0,0,5.7612
+Tier 2 (SSL + disentangle),5,10,0,1,5.3022
+Tier 2 (SSL + disentangle),5,10,0,2,4.9631
+Tier 2 (SSL + disentangle),5,10,0,3,4.7028
+Tier 2 (SSL + disentangle),5,10,0,4,4.4959
+Tier 2 (SSL + disentangle),5,10,0,5,4.3258
+Tier 2 (SSL + disentangle),5,10,1,0,3.4343
+Tier 2 (SSL + disentangle),5,10,1,1,2.9045
+Tier 2 (SSL + disentangle),5,10,1,2,2.4777
+Tier 2 (SSL + disentangle),5,10,1,3,2.1389
+Tier 2 (SSL + disentangle),5,10,1,4,1.8747
+Tier 2 (SSL + disentangle),5,10,1,5,1.6710
+Tier 2 (SSL + disentangle),5,10,2,0,4.8811
+Tier 2 (SSL + disentangle),5,10,2,1,4.4471
+Tier 2 (SSL + disentangle),5,10,2,2,4.0853
+Tier 2 (SSL + disentangle),5,10,2,3,3.7957
+Tier 2 (SSL + disentangle),5,10,2,4,3.5711
+Tier 2 (SSL + disentangle),5,10,2,5,3.3949
+Tier 2 (SSL + disentangle),5,10,3,0,4.8130
+Tier 2 (SSL + disentangle),5,10,3,1,4.4878
+Tier 2 (SSL + disentangle),5,10,3,2,4.2423
+Tier 2 (SSL + disentangle),5,10,3,3,4.0769
+Tier 2 (SSL + disentangle),5,10,3,4,3.9791
+Tier 2 (SSL + disentangle),5,10,3,5,3.9297
+Tier 2 (SSL + disentangle),5,10,4,0,5.0213
+Tier 2 (SSL + disentangle),5,10,4,1,4.1946
+Tier 2 (SSL + disentangle),5,10,4,2,3.5687
+Tier 2 (SSL + disentangle),5,10,4,3,3.0816
+Tier 2 (SSL + disentangle),5,10,4,4,2.6970
+Tier 2 (SSL + disentangle),5,10,4,5,2.3898
+Tier 2 (SSL + disentangle),5,11,0,0,3.2786
+Tier 2 (SSL + disentangle),5,11,0,1,3.1362
+Tier 2 (SSL + disentangle),5,11,0,2,2.9999
+Tier 2 (SSL + disentangle),5,11,0,3,2.8790
+Tier 2 (SSL + disentangle),5,11,0,4,2.7769
+Tier 2 (SSL + disentangle),5,11,0,5,2.6918
+Tier 2 (SSL + disentangle),5,11,1,0,2.5593
+Tier 2 (SSL + disentangle),5,11,1,1,2.2067
+Tier 2 (SSL + disentangle),5,11,1,2,1.9351
+Tier 2 (SSL + disentangle),5,11,1,3,1.7178
+Tier 2 (SSL + disentangle),5,11,1,4,1.5429
+Tier 2 (SSL + disentangle),5,11,1,5,1.4012
+Tier 2 (SSL + disentangle),5,11,2,0,3.4833
+Tier 2 (SSL + disentangle),5,11,2,1,2.8981
+Tier 2 (SSL + disentangle),5,11,2,2,2.5801
+Tier 2 (SSL + disentangle),5,11,2,3,2.3491
+Tier 2 (SSL + disentangle),5,11,2,4,2.1556
+Tier 2 (SSL + disentangle),5,11,2,5,1.9856
+Tier 2 (SSL + disentangle),5,11,3,0,2.9101
+Tier 2 (SSL + disentangle),5,11,3,1,2.4778
+Tier 2 (SSL + disentangle),5,11,3,2,2.2400
+Tier 2 (SSL + disentangle),5,11,3,3,2.0990
+Tier 2 (SSL + disentangle),5,11,3,4,2.0066
+Tier 2 (SSL + disentangle),5,11,3,5,1.9389
+Tier 2 (SSL + disentangle),5,11,4,0,2.8706
+Tier 2 (SSL + disentangle),5,11,4,1,2.5262
+Tier 2 (SSL + disentangle),5,11,4,2,2.2947
+Tier 2 (SSL + disentangle),5,11,4,3,2.1335
+Tier 2 (SSL + disentangle),5,11,4,4,2.0155
+Tier 2 (SSL + disentangle),5,11,4,5,1.9243
+Tier 2 (SSL + disentangle),5,13,0,0,1.7492
+Tier 2 (SSL + disentangle),5,13,0,1,1.5571
+Tier 2 (SSL + disentangle),5,13,0,2,1.4142
+Tier 2 (SSL + disentangle),5,13,0,3,1.2969
+Tier 2 (SSL + disentangle),5,13,0,4,1.1976
+Tier 2 (SSL + disentangle),5,13,0,5,1.1136
+Tier 2 (SSL + disentangle),5,13,1,0,2.1304
+Tier 2 (SSL + disentangle),5,13,1,1,2.0115
+Tier 2 (SSL + disentangle),5,13,1,2,1.9362
+Tier 2 (SSL + disentangle),5,13,1,3,1.8811
+Tier 2 (SSL + disentangle),5,13,1,4,1.8344
+Tier 2 (SSL + disentangle),5,13,1,5,1.7912
+Tier 2 (SSL + disentangle),5,13,2,0,1.6615
+Tier 2 (SSL + disentangle),5,13,2,1,1.4046
+Tier 2 (SSL + disentangle),5,13,2,2,1.2568
+Tier 2 (SSL + disentangle),5,13,2,3,1.1632
+Tier 2 (SSL + disentangle),5,13,2,4,1.0999
+Tier 2 (SSL + disentangle),5,13,2,5,1.0552
+Tier 2 (SSL + disentangle),5,13,3,0,1.7024
+Tier 2 (SSL + disentangle),5,13,3,1,1.3841
+Tier 2 (SSL + disentangle),5,13,3,2,1.1632
+Tier 2 (SSL + disentangle),5,13,3,3,1.0009
+Tier 2 (SSL + disentangle),5,13,3,4,0.8823
+Tier 2 (SSL + disentangle),5,13,3,5,0.7976
+Tier 2 (SSL + disentangle),5,13,4,0,1.7287
+Tier 2 (SSL + disentangle),5,13,4,1,1.5481
+Tier 2 (SSL + disentangle),5,13,4,2,1.4126
+Tier 2 (SSL + disentangle),5,13,4,3,1.3164
+Tier 2 (SSL + disentangle),5,13,4,4,1.2511
+Tier 2 (SSL + disentangle),5,13,4,5,1.2090
+Tier 2 (SSL + disentangle),5,20,0,0,5.2933
+Tier 2 (SSL + disentangle),5,20,0,1,4.6159
+Tier 2 (SSL + disentangle),5,20,0,2,4.0720
+Tier 2 (SSL + disentangle),5,20,0,3,3.6315
+Tier 2 (SSL + disentangle),5,20,0,4,3.2742
+Tier 2 (SSL + disentangle),5,20,0,5,2.9856
+Tier 2 (SSL + disentangle),5,20,1,0,5.6981
+Tier 2 (SSL + disentangle),5,20,1,1,5.4043
+Tier 2 (SSL + disentangle),5,20,1,2,5.1996
+Tier 2 (SSL + disentangle),5,20,1,3,5.0179
+Tier 2 (SSL + disentangle),5,20,1,4,4.8299
+Tier 2 (SSL + disentangle),5,20,1,5,4.6336
+Tier 2 (SSL + disentangle),5,20,2,0,4.6303
+Tier 2 (SSL + disentangle),5,20,2,1,3.9621
+Tier 2 (SSL + disentangle),5,20,2,2,3.5134
+Tier 2 (SSL + disentangle),5,20,2,3,3.2058
+Tier 2 (SSL + disentangle),5,20,2,4,2.9963
+Tier 2 (SSL + disentangle),5,20,2,5,2.8555
+Tier 2 (SSL + disentangle),5,20,3,0,5.9502
+Tier 2 (SSL + disentangle),5,20,3,1,5.1363
+Tier 2 (SSL + disentangle),5,20,3,2,4.4533
+Tier 2 (SSL + disentangle),5,20,3,3,3.8702
+Tier 2 (SSL + disentangle),5,20,3,4,3.3685
+Tier 2 (SSL + disentangle),5,20,3,5,2.9365
+Tier 2 (SSL + disentangle),5,20,4,0,4.2274
+Tier 2 (SSL + disentangle),5,20,4,1,3.7582
+Tier 2 (SSL + disentangle),5,20,4,2,3.4328
+Tier 2 (SSL + disentangle),5,20,4,3,3.2111
+Tier 2 (SSL + disentangle),5,20,4,4,3.0629
+Tier 2 (SSL + disentangle),5,20,4,5,2.9662
+Tier 2 (SSL + disentangle),10,10,0,0,4.1284
+Tier 2 (SSL + disentangle),10,10,0,1,3.5841
+Tier 2 (SSL + disentangle),10,10,0,2,3.1528
+Tier 2 (SSL + disentangle),10,10,0,3,2.8083
+Tier 2 (SSL + disentangle),10,10,0,4,2.5322
+Tier 2 (SSL + disentangle),10,10,0,5,2.3097
+Tier 2 (SSL + disentangle),10,10,1,0,4.1770
+Tier 2 (SSL + disentangle),10,10,1,1,3.7284
+Tier 2 (SSL + disentangle),10,10,1,2,3.4197
+Tier 2 (SSL + disentangle),10,10,1,3,3.1907
+Tier 2 (SSL + disentangle),10,10,1,4,3.0085
+Tier 2 (SSL + disentangle),10,10,1,5,2.8553
+Tier 2 (SSL + disentangle),10,10,2,0,3.4329
+Tier 2 (SSL + disentangle),10,10,2,1,3.0193
+Tier 2 (SSL + disentangle),10,10,2,2,2.6873
+Tier 2 (SSL + disentangle),10,10,2,3,2.4049
+Tier 2 (SSL + disentangle),10,10,2,4,2.1595
+Tier 2 (SSL + disentangle),10,10,2,5,1.9452
+Tier 2 (SSL + disentangle),10,10,3,0,4.9005
+Tier 2 (SSL + disentangle),10,10,3,1,4.3549
+Tier 2 (SSL + disentangle),10,10,3,2,3.9099
+Tier 2 (SSL + disentangle),10,10,3,3,3.5236
+Tier 2 (SSL + disentangle),10,10,3,4,3.1808
+Tier 2 (SSL + disentangle),10,10,3,5,2.8762
+Tier 2 (SSL + disentangle),10,10,4,0,4.8439
+Tier 2 (SSL + disentangle),10,10,4,1,4.3321
+Tier 2 (SSL + disentangle),10,10,4,2,3.9284
+Tier 2 (SSL + disentangle),10,10,4,3,3.5877
+Tier 2 (SSL + disentangle),10,10,4,4,3.2904
+Tier 2 (SSL + disentangle),10,10,4,5,3.0276
+Tier 2 (SSL + disentangle),10,11,0,0,2.8869
+Tier 2 (SSL + disentangle),10,11,0,1,2.5431
+Tier 2 (SSL + disentangle),10,11,0,2,2.3130
+Tier 2 (SSL + disentangle),10,11,0,3,2.1457
+Tier 2 (SSL + disentangle),10,11,0,4,2.0141
+Tier 2 (SSL + disentangle),10,11,0,5,1.9020
+Tier 2 (SSL + disentangle),10,11,1,0,3.1625
+Tier 2 (SSL + disentangle),10,11,1,1,2.6120
+Tier 2 (SSL + disentangle),10,11,1,2,2.2427
+Tier 2 (SSL + disentangle),10,11,1,3,1.9968
+Tier 2 (SSL + disentangle),10,11,1,4,1.8354
+Tier 2 (SSL + disentangle),10,11,1,5,1.7307
+Tier 2 (SSL + disentangle),10,11,2,0,3.7031
+Tier 2 (SSL + disentangle),10,11,2,1,3.3349
+Tier 2 (SSL + disentangle),10,11,2,2,3.0364
+Tier 2 (SSL + disentangle),10,11,2,3,2.7892
+Tier 2 (SSL + disentangle),10,11,2,4,2.5782
+Tier 2 (SSL + disentangle),10,11,2,5,2.3932
+Tier 2 (SSL + disentangle),10,11,3,0,4.4062
+Tier 2 (SSL + disentangle),10,11,3,1,3.8478
+Tier 2 (SSL + disentangle),10,11,3,2,3.4892
+Tier 2 (SSL + disentangle),10,11,3,3,3.1904
+Tier 2 (SSL + disentangle),10,11,3,4,2.9205
+Tier 2 (SSL + disentangle),10,11,3,5,2.6712
+Tier 2 (SSL + disentangle),10,11,4,0,4.2853
+Tier 2 (SSL + disentangle),10,11,4,1,3.8992
+Tier 2 (SSL + disentangle),10,11,4,2,3.5690
+Tier 2 (SSL + disentangle),10,11,4,3,3.2790
+Tier 2 (SSL + disentangle),10,11,4,4,3.0225
+Tier 2 (SSL + disentangle),10,11,4,5,2.7957
+Tier 2 (SSL + disentangle),10,13,0,0,1.2029
+Tier 2 (SSL + disentangle),10,13,0,1,0.9941
+Tier 2 (SSL + disentangle),10,13,0,2,0.8659
+Tier 2 (SSL + disentangle),10,13,0,3,0.7656
+Tier 2 (SSL + disentangle),10,13,0,4,0.6831
+Tier 2 (SSL + disentangle),10,13,0,5,0.6141
+Tier 2 (SSL + disentangle),10,13,1,0,2.0642
+Tier 2 (SSL + disentangle),10,13,1,1,1.7853
+Tier 2 (SSL + disentangle),10,13,1,2,1.5588
+Tier 2 (SSL + disentangle),10,13,1,3,1.3698
+Tier 2 (SSL + disentangle),10,13,1,4,1.2096
+Tier 2 (SSL + disentangle),10,13,1,5,1.0734
+Tier 2 (SSL + disentangle),10,13,2,0,1.6608
+Tier 2 (SSL + disentangle),10,13,2,1,1.4649
+Tier 2 (SSL + disentangle),10,13,2,2,1.3138
+Tier 2 (SSL + disentangle),10,13,2,3,1.2066
+Tier 2 (SSL + disentangle),10,13,2,4,1.1362
+Tier 2 (SSL + disentangle),10,13,2,5,1.0947
+Tier 2 (SSL + disentangle),10,13,3,0,1.8856
+Tier 2 (SSL + disentangle),10,13,3,1,1.5913
+Tier 2 (SSL + disentangle),10,13,3,2,1.3876
+Tier 2 (SSL + disentangle),10,13,3,3,1.2289
+Tier 2 (SSL + disentangle),10,13,3,4,1.0975
+Tier 2 (SSL + disentangle),10,13,3,5,0.9864
+Tier 2 (SSL + disentangle),10,13,4,0,1.9105
+Tier 2 (SSL + disentangle),10,13,4,1,1.7022
+Tier 2 (SSL + disentangle),10,13,4,2,1.5384
+Tier 2 (SSL + disentangle),10,13,4,3,1.3862
+Tier 2 (SSL + disentangle),10,13,4,4,1.2434
+Tier 2 (SSL + disentangle),10,13,4,5,1.1123
+Tier 2 (SSL + disentangle),10,20,0,0,3.9133
+Tier 2 (SSL + disentangle),10,20,0,1,3.5089
+Tier 2 (SSL + disentangle),10,20,0,2,3.1506
+Tier 2 (SSL + disentangle),10,20,0,3,2.8349
+Tier 2 (SSL + disentangle),10,20,0,4,2.5599
+Tier 2 (SSL + disentangle),10,20,0,5,2.3239
+Tier 2 (SSL + disentangle),10,20,1,0,3.9094
+Tier 2 (SSL + disentangle),10,20,1,1,3.5248
+Tier 2 (SSL + disentangle),10,20,1,2,3.1887
+Tier 2 (SSL + disentangle),10,20,1,3,2.8983
+Tier 2 (SSL + disentangle),10,20,1,4,2.6490
+Tier 2 (SSL + disentangle),10,20,1,5,2.4359
+Tier 2 (SSL + disentangle),10,20,2,0,4.1330
+Tier 2 (SSL + disentangle),10,20,2,1,3.8739
+Tier 2 (SSL + disentangle),10,20,2,2,3.6309
+Tier 2 (SSL + disentangle),10,20,2,3,3.4059
+Tier 2 (SSL + disentangle),10,20,2,4,3.1989
+Tier 2 (SSL + disentangle),10,20,2,5,3.0088
+Tier 2 (SSL + disentangle),10,20,3,0,3.3728
+Tier 2 (SSL + disentangle),10,20,3,1,2.9117
+Tier 2 (SSL + disentangle),10,20,3,2,2.5669
+Tier 2 (SSL + disentangle),10,20,3,3,2.2966
+Tier 2 (SSL + disentangle),10,20,3,4,2.0757
+Tier 2 (SSL + disentangle),10,20,3,5,1.8901
+Tier 2 (SSL + disentangle),10,20,4,0,6.7371
+Tier 2 (SSL + disentangle),10,20,4,1,5.7104
+Tier 2 (SSL + disentangle),10,20,4,2,4.9117
+Tier 2 (SSL + disentangle),10,20,4,3,4.2838
+Tier 2 (SSL + disentangle),10,20,4,4,3.7880
+Tier 2 (SSL + disentangle),10,20,4,5,3.3967
+Tier 2 (SSL + disentangle),20,10,0,0,5.0395
+Tier 2 (SSL + disentangle),20,10,0,1,4.3611
+Tier 2 (SSL + disentangle),20,10,0,2,3.7845
+Tier 2 (SSL + disentangle),20,10,0,3,3.2926
+Tier 2 (SSL + disentangle),20,10,0,4,2.8741
+Tier 2 (SSL + disentangle),20,10,0,5,2.5196
+Tier 2 (SSL + disentangle),20,10,1,0,4.5788
+Tier 2 (SSL + disentangle),20,10,1,1,4.0623
+Tier 2 (SSL + disentangle),20,10,1,2,3.6454
+Tier 2 (SSL + disentangle),20,10,1,3,3.2839
+Tier 2 (SSL + disentangle),20,10,1,4,2.9669
+Tier 2 (SSL + disentangle),20,10,1,5,2.6895
+Tier 2 (SSL + disentangle),20,10,2,0,2.6966
+Tier 2 (SSL + disentangle),20,10,2,1,2.3266
+Tier 2 (SSL + disentangle),20,10,2,2,2.0768
+Tier 2 (SSL + disentangle),20,10,2,3,1.8834
+Tier 2 (SSL + disentangle),20,10,2,4,1.7212
+Tier 2 (SSL + disentangle),20,10,2,5,1.5793
+Tier 2 (SSL + disentangle),20,10,3,0,4.5674
+Tier 2 (SSL + disentangle),20,10,3,1,3.8377
+Tier 2 (SSL + disentangle),20,10,3,2,3.3312
+Tier 2 (SSL + disentangle),20,10,3,3,2.9538
+Tier 2 (SSL + disentangle),20,10,3,4,2.6595
+Tier 2 (SSL + disentangle),20,10,3,5,2.4210
+Tier 2 (SSL + disentangle),20,10,4,0,4.6728
+Tier 2 (SSL + disentangle),20,10,4,1,4.0368
+Tier 2 (SSL + disentangle),20,10,4,2,3.4923
+Tier 2 (SSL + disentangle),20,10,4,3,3.0334
+Tier 2 (SSL + disentangle),20,10,4,4,2.6511
+Tier 2 (SSL + disentangle),20,10,4,5,2.3347
+Tier 2 (SSL + disentangle),20,11,0,0,3.8347
+Tier 2 (SSL + disentangle),20,11,0,1,3.3475
+Tier 2 (SSL + disentangle),20,11,0,2,2.9213
+Tier 2 (SSL + disentangle),20,11,0,3,2.5410
+Tier 2 (SSL + disentangle),20,11,0,4,2.2029
+Tier 2 (SSL + disentangle),20,11,0,5,1.9062
+Tier 2 (SSL + disentangle),20,11,1,0,2.0670
+Tier 2 (SSL + disentangle),20,11,1,1,1.6856
+Tier 2 (SSL + disentangle),20,11,1,2,1.3807
+Tier 2 (SSL + disentangle),20,11,1,3,1.1290
+Tier 2 (SSL + disentangle),20,11,1,4,0.9231
+Tier 2 (SSL + disentangle),20,11,1,5,0.7588
+Tier 2 (SSL + disentangle),20,11,2,0,3.5017
+Tier 2 (SSL + disentangle),20,11,2,1,2.9937
+Tier 2 (SSL + disentangle),20,11,2,2,2.6206
+Tier 2 (SSL + disentangle),20,11,2,3,2.3125
+Tier 2 (SSL + disentangle),20,11,2,4,2.0515
+Tier 2 (SSL + disentangle),20,11,2,5,1.8287
+Tier 2 (SSL + disentangle),20,11,3,0,2.5224
+Tier 2 (SSL + disentangle),20,11,3,1,2.1645
+Tier 2 (SSL + disentangle),20,11,3,2,1.8815
+Tier 2 (SSL + disentangle),20,11,3,3,1.6438
+Tier 2 (SSL + disentangle),20,11,3,4,1.4394
+Tier 2 (SSL + disentangle),20,11,3,5,1.2623
+Tier 2 (SSL + disentangle),20,11,4,0,3.8520
+Tier 2 (SSL + disentangle),20,11,4,1,3.5127
+Tier 2 (SSL + disentangle),20,11,4,2,3.2221
+Tier 2 (SSL + disentangle),20,11,4,3,2.9694
+Tier 2 (SSL + disentangle),20,11,4,4,2.7474
+Tier 2 (SSL + disentangle),20,11,4,5,2.5508
+Tier 2 (SSL + disentangle),20,13,0,0,1.5665
+Tier 2 (SSL + disentangle),20,13,0,1,1.3190
+Tier 2 (SSL + disentangle),20,13,0,2,1.1288
+Tier 2 (SSL + disentangle),20,13,0,3,0.9784
+Tier 2 (SSL + disentangle),20,13,0,4,0.8609
+Tier 2 (SSL + disentangle),20,13,0,5,0.7701
+Tier 2 (SSL + disentangle),20,13,1,0,1.8395
+Tier 2 (SSL + disentangle),20,13,1,1,1.5704
+Tier 2 (SSL + disentangle),20,13,1,2,1.3686
+Tier 2 (SSL + disentangle),20,13,1,3,1.1979
+Tier 2 (SSL + disentangle),20,13,1,4,1.0507
+Tier 2 (SSL + disentangle),20,13,1,5,0.9240
+Tier 2 (SSL + disentangle),20,13,2,0,1.9746
+Tier 2 (SSL + disentangle),20,13,2,1,1.7523
+Tier 2 (SSL + disentangle),20,13,2,2,1.5792
+Tier 2 (SSL + disentangle),20,13,2,3,1.4373
+Tier 2 (SSL + disentangle),20,13,2,4,1.3164
+Tier 2 (SSL + disentangle),20,13,2,5,1.2101
+Tier 2 (SSL + disentangle),20,13,3,0,1.6040
+Tier 2 (SSL + disentangle),20,13,3,1,1.3372
+Tier 2 (SSL + disentangle),20,13,3,2,1.1451
+Tier 2 (SSL + disentangle),20,13,3,3,0.9923
+Tier 2 (SSL + disentangle),20,13,3,4,0.8654
+Tier 2 (SSL + disentangle),20,13,3,5,0.7572
+Tier 2 (SSL + disentangle),20,13,4,0,1.5213
+Tier 2 (SSL + disentangle),20,13,4,1,1.3234
+Tier 2 (SSL + disentangle),20,13,4,2,1.1866
+Tier 2 (SSL + disentangle),20,13,4,3,1.0779
+Tier 2 (SSL + disentangle),20,13,4,4,0.9859
+Tier 2 (SSL + disentangle),20,13,4,5,0.9058
+Tier 2 (SSL + disentangle),20,20,0,0,4.9750
+Tier 2 (SSL + disentangle),20,20,0,1,4.5195
+Tier 2 (SSL + disentangle),20,20,0,2,4.1283
+Tier 2 (SSL + disentangle),20,20,0,3,3.7830
+Tier 2 (SSL + disentangle),20,20,0,4,3.4733
+Tier 2 (SSL + disentangle),20,20,0,5,3.1943
+Tier 2 (SSL + disentangle),20,20,1,0,5.3984
+Tier 2 (SSL + disentangle),20,20,1,1,4.5648
+Tier 2 (SSL + disentangle),20,20,1,2,3.8862
+Tier 2 (SSL + disentangle),20,20,1,3,3.3274
+Tier 2 (SSL + disentangle),20,20,1,4,2.8688
+Tier 2 (SSL + disentangle),20,20,1,5,2.4957
+Tier 2 (SSL + disentangle),20,20,2,0,5.0362
+Tier 2 (SSL + disentangle),20,20,2,1,4.2907
+Tier 2 (SSL + disentangle),20,20,2,2,3.6832
+Tier 2 (SSL + disentangle),20,20,2,3,3.1879
+Tier 2 (SSL + disentangle),20,20,2,4,2.7865
+Tier 2 (SSL + disentangle),20,20,2,5,2.4631
+Tier 2 (SSL + disentangle),20,20,3,0,5.0361
+Tier 2 (SSL + disentangle),20,20,3,1,4.4194
+Tier 2 (SSL + disentangle),20,20,3,2,3.8735
+Tier 2 (SSL + disentangle),20,20,3,3,3.3986
+Tier 2 (SSL + disentangle),20,20,3,4,2.9919
+Tier 2 (SSL + disentangle),20,20,3,5,2.6485
+Tier 2 (SSL + disentangle),20,20,4,0,6.4367
+Tier 2 (SSL + disentangle),20,20,4,1,5.8667
+Tier 2 (SSL + disentangle),20,20,4,2,5.3718
+Tier 2 (SSL + disentangle),20,20,4,3,4.9428
+Tier 2 (SSL + disentangle),20,20,4,4,4.5704
+Tier 2 (SSL + disentangle),20,20,4,5,4.2463
+Joint Tier 1+2,1,10,0,0,6.6475
+Joint Tier 1+2,1,10,0,1,6.4350
+Joint Tier 1+2,1,10,0,2,6.3581
+Joint Tier 1+2,1,10,0,3,6.3320
+Joint Tier 1+2,1,10,0,4,6.3261
+Joint Tier 1+2,1,10,0,5,6.3277
+Joint Tier 1+2,1,10,1,0,6.2164
+Joint Tier 1+2,1,10,1,1,6.0254
+Joint Tier 1+2,1,10,1,2,5.9602
+Joint Tier 1+2,1,10,1,3,5.9437
+Joint Tier 1+2,1,10,1,4,5.9465
+Joint Tier 1+2,1,10,1,5,5.9564
+Joint Tier 1+2,1,10,2,0,5.7206
+Joint Tier 1+2,1,10,2,1,5.1417
+Joint Tier 1+2,1,10,2,2,4.8240
+Joint Tier 1+2,1,10,2,3,4.6487
+Joint Tier 1+2,1,10,2,4,4.5499
+Joint Tier 1+2,1,10,2,5,4.4929
+Joint Tier 1+2,1,10,3,0,6.1367
+Joint Tier 1+2,1,10,3,1,6.0625
+Joint Tier 1+2,1,10,3,2,6.0475
+Joint Tier 1+2,1,10,3,3,6.0556
+Joint Tier 1+2,1,10,3,4,6.0692
+Joint Tier 1+2,1,10,3,5,6.0815
+Joint Tier 1+2,1,10,4,0,6.3095
+Joint Tier 1+2,1,10,4,1,5.4623
+Joint Tier 1+2,1,10,4,2,5.8372
+Joint Tier 1+2,1,10,4,3,6.3306
+Joint Tier 1+2,1,10,4,4,6.6728
+Joint Tier 1+2,1,10,4,5,6.8499
+Joint Tier 1+2,1,11,0,0,5.4694
+Joint Tier 1+2,1,11,0,1,5.1519
+Joint Tier 1+2,1,11,0,2,4.9746
+Joint Tier 1+2,1,11,0,3,4.8871
+Joint Tier 1+2,1,11,0,4,4.8512
+Joint Tier 1+2,1,11,0,5,4.8411
+Joint Tier 1+2,1,11,1,0,2.8787
+Joint Tier 1+2,1,11,1,1,2.8340
+Joint Tier 1+2,1,11,1,2,2.8622
+Joint Tier 1+2,1,11,1,3,2.9040
+Joint Tier 1+2,1,11,1,4,2.9398
+Joint Tier 1+2,1,11,1,5,2.9657
+Joint Tier 1+2,1,11,2,0,4.8053
+Joint Tier 1+2,1,11,2,1,5.3013
+Joint Tier 1+2,1,11,2,2,5.8950
+Joint Tier 1+2,1,11,2,3,6.3457
+Joint Tier 1+2,1,11,2,4,6.6427
+Joint Tier 1+2,1,11,2,5,6.8238
+Joint Tier 1+2,1,11,3,0,3.8545
+Joint Tier 1+2,1,11,3,1,3.8718
+Joint Tier 1+2,1,11,3,2,3.8747
+Joint Tier 1+2,1,11,3,3,3.8710
+Joint Tier 1+2,1,11,3,4,3.8665
+Joint Tier 1+2,1,11,3,5,3.8636
+Joint Tier 1+2,1,11,4,0,4.1512
+Joint Tier 1+2,1,11,4,1,3.7604
+Joint Tier 1+2,1,11,4,2,3.6845
+Joint Tier 1+2,1,11,4,3,3.7864
+Joint Tier 1+2,1,11,4,4,3.9490
+Joint Tier 1+2,1,11,4,5,4.0932
+Joint Tier 1+2,1,13,0,0,2.1835
+Joint Tier 1+2,1,13,0,1,1.9946
+Joint Tier 1+2,1,13,0,2,2.1304
+Joint Tier 1+2,1,13,0,3,2.3133
+Joint Tier 1+2,1,13,0,4,2.4658
+Joint Tier 1+2,1,13,0,5,2.5690
+Joint Tier 1+2,1,13,1,0,1.9722
+Joint Tier 1+2,1,13,1,1,2.0976
+Joint Tier 1+2,1,13,1,2,2.2369
+Joint Tier 1+2,1,13,1,3,2.3480
+Joint Tier 1+2,1,13,1,4,2.4263
+Joint Tier 1+2,1,13,1,5,2.4783
+Joint Tier 1+2,1,13,2,0,2.8874
+Joint Tier 1+2,1,13,2,1,2.8590
+Joint Tier 1+2,1,13,2,2,2.8574
+Joint Tier 1+2,1,13,2,3,2.8658
+Joint Tier 1+2,1,13,2,4,2.8779
+Joint Tier 1+2,1,13,2,5,2.8909
+Joint Tier 1+2,1,13,3,0,2.1549
+Joint Tier 1+2,1,13,3,1,1.9470
+Joint Tier 1+2,1,13,3,2,1.8660
+Joint Tier 1+2,1,13,3,3,1.8264
+Joint Tier 1+2,1,13,3,4,1.8054
+Joint Tier 1+2,1,13,3,5,1.7939
+Joint Tier 1+2,1,13,4,0,1.6714
+Joint Tier 1+2,1,13,4,1,1.8764
+Joint Tier 1+2,1,13,4,2,2.1668
+Joint Tier 1+2,1,13,4,3,2.4160
+Joint Tier 1+2,1,13,4,4,2.5602
+Joint Tier 1+2,1,13,4,5,2.6254
+Joint Tier 1+2,1,20,0,0,11.6065
+Joint Tier 1+2,1,20,0,1,9.7439
+Joint Tier 1+2,1,20,0,2,9.1307
+Joint Tier 1+2,1,20,0,3,9.0015
+Joint Tier 1+2,1,20,0,4,9.0750
+Joint Tier 1+2,1,20,0,5,9.1881
+Joint Tier 1+2,1,20,1,0,7.1157
+Joint Tier 1+2,1,20,1,1,6.7326
+Joint Tier 1+2,1,20,1,2,6.5490
+Joint Tier 1+2,1,20,1,3,6.4531
+Joint Tier 1+2,1,20,1,4,6.3997
+Joint Tier 1+2,1,20,1,5,6.3684
+Joint Tier 1+2,1,20,2,0,11.4123
+Joint Tier 1+2,1,20,2,1,10.1550
+Joint Tier 1+2,1,20,2,2,9.7478
+Joint Tier 1+2,1,20,2,3,9.5887
+Joint Tier 1+2,1,20,2,4,9.5386
+Joint Tier 1+2,1,20,2,5,9.5342
+Joint Tier 1+2,1,20,3,0,7.4914
+Joint Tier 1+2,1,20,3,1,7.2630
+Joint Tier 1+2,1,20,3,2,7.3946
+Joint Tier 1+2,1,20,3,3,7.5425
+Joint Tier 1+2,1,20,3,4,7.6534
+Joint Tier 1+2,1,20,3,5,7.7243
+Joint Tier 1+2,1,20,4,0,9.5604
+Joint Tier 1+2,1,20,4,1,7.9697
+Joint Tier 1+2,1,20,4,2,7.5101
+Joint Tier 1+2,1,20,4,3,7.3555
+Joint Tier 1+2,1,20,4,4,7.3132
+Joint Tier 1+2,1,20,4,5,7.3086
+Joint Tier 1+2,2,10,0,0,5.6909
+Joint Tier 1+2,2,10,0,1,5.2829
+Joint Tier 1+2,2,10,0,2,5.0313
+Joint Tier 1+2,2,10,0,3,4.8751
+Joint Tier 1+2,2,10,0,4,4.7850
+Joint Tier 1+2,2,10,0,5,4.7428
+Joint Tier 1+2,2,10,1,0,7.0707
+Joint Tier 1+2,2,10,1,1,6.5741
+Joint Tier 1+2,2,10,1,2,6.3681
+Joint Tier 1+2,2,10,1,3,6.2171
+Joint Tier 1+2,2,10,1,4,6.0795
+Joint Tier 1+2,2,10,1,5,5.9495
+Joint Tier 1+2,2,10,2,0,3.9498
+Joint Tier 1+2,2,10,2,1,3.9999
+Joint Tier 1+2,2,10,2,2,4.0454
+Joint Tier 1+2,2,10,2,3,4.0791
+Joint Tier 1+2,2,10,2,4,4.1010
+Joint Tier 1+2,2,10,2,5,4.1135
+Joint Tier 1+2,2,10,3,0,6.7943
+Joint Tier 1+2,2,10,3,1,6.2833
+Joint Tier 1+2,2,10,3,2,6.1367
+Joint Tier 1+2,2,10,3,3,6.1297
+Joint Tier 1+2,2,10,3,4,6.1613
+Joint Tier 1+2,2,10,3,5,6.1974
+Joint Tier 1+2,2,10,4,0,7.4320
+Joint Tier 1+2,2,10,4,1,7.3675
+Joint Tier 1+2,2,10,4,2,7.3083
+Joint Tier 1+2,2,10,4,3,7.2543
+Joint Tier 1+2,2,10,4,4,7.2051
+Joint Tier 1+2,2,10,4,5,7.1602
+Joint Tier 1+2,2,11,0,0,4.6997
+Joint Tier 1+2,2,11,0,1,3.3199
+Joint Tier 1+2,2,11,0,2,2.9810
+Joint Tier 1+2,2,11,0,3,3.0661
+Joint Tier 1+2,2,11,0,4,3.3809
+Joint Tier 1+2,2,11,0,5,3.7769
+Joint Tier 1+2,2,11,1,0,5.3463
+Joint Tier 1+2,2,11,1,1,4.8921
+Joint Tier 1+2,2,11,1,2,5.2575
+Joint Tier 1+2,2,11,1,3,5.6973
+Joint Tier 1+2,2,11,1,4,5.9548
+Joint Tier 1+2,2,11,1,5,6.0540
+Joint Tier 1+2,2,11,2,0,3.4800
+Joint Tier 1+2,2,11,2,1,2.6408
+Joint Tier 1+2,2,11,2,2,2.4595
+Joint Tier 1+2,2,11,2,3,2.5491
+Joint Tier 1+2,2,11,2,4,2.7203
+Joint Tier 1+2,2,11,2,5,2.8565
+Joint Tier 1+2,2,11,3,0,4.2633
+Joint Tier 1+2,2,11,3,1,3.4180
+Joint Tier 1+2,2,11,3,2,2.8243
+Joint Tier 1+2,2,11,3,3,2.4632
+Joint Tier 1+2,2,11,3,4,2.2928
+Joint Tier 1+2,2,11,3,5,2.2565
+Joint Tier 1+2,2,11,4,0,2.4425
+Joint Tier 1+2,2,11,4,1,2.3458
+Joint Tier 1+2,2,11,4,2,2.3134
+Joint Tier 1+2,2,11,4,3,2.3027
+Joint Tier 1+2,2,11,4,4,2.2996
+Joint Tier 1+2,2,11,4,5,2.2995
+Joint Tier 1+2,2,13,0,0,2.2798
+Joint Tier 1+2,2,13,0,1,2.3612
+Joint Tier 1+2,2,13,0,2,2.7137
+Joint Tier 1+2,2,13,0,3,3.0652
+Joint Tier 1+2,2,13,0,4,3.3254
+Joint Tier 1+2,2,13,0,5,3.4778
+Joint Tier 1+2,2,13,1,0,2.3098
+Joint Tier 1+2,2,13,1,1,2.0594
+Joint Tier 1+2,2,13,1,2,1.9547
+Joint Tier 1+2,2,13,1,3,1.9258
+Joint Tier 1+2,2,13,1,4,1.9470
+Joint Tier 1+2,2,13,1,5,1.9966
+Joint Tier 1+2,2,13,2,0,2.8798
+Joint Tier 1+2,2,13,2,1,2.6289
+Joint Tier 1+2,2,13,2,2,2.4458
+Joint Tier 1+2,2,13,2,3,2.3476
+Joint Tier 1+2,2,13,2,4,2.3235
+Joint Tier 1+2,2,13,2,5,2.3505
+Joint Tier 1+2,2,13,3,0,2.5825
+Joint Tier 1+2,2,13,3,1,2.6411
+Joint Tier 1+2,2,13,3,2,2.7951
+Joint Tier 1+2,2,13,3,3,2.9524
+Joint Tier 1+2,2,13,3,4,3.0786
+Joint Tier 1+2,2,13,3,5,3.1624
+Joint Tier 1+2,2,13,4,0,2.2494
+Joint Tier 1+2,2,13,4,1,2.0508
+Joint Tier 1+2,2,13,4,2,1.8746
+Joint Tier 1+2,2,13,4,3,1.7220
+Joint Tier 1+2,2,13,4,4,1.5947
+Joint Tier 1+2,2,13,4,5,1.4923
+Joint Tier 1+2,2,20,0,0,10.9121
+Joint Tier 1+2,2,20,0,1,9.3713
+Joint Tier 1+2,2,20,0,2,9.0740
+Joint Tier 1+2,2,20,0,3,9.0243
+Joint Tier 1+2,2,20,0,4,9.0239
+Joint Tier 1+2,2,20,0,5,9.0249
+Joint Tier 1+2,2,20,1,0,8.8632
+Joint Tier 1+2,2,20,1,1,6.7983
+Joint Tier 1+2,2,20,1,2,5.9008
+Joint Tier 1+2,2,20,1,3,5.4975
+Joint Tier 1+2,2,20,1,4,5.3373
+Joint Tier 1+2,2,20,1,5,5.2853
+Joint Tier 1+2,2,20,2,0,10.4425
+Joint Tier 1+2,2,20,2,1,9.1946
+Joint Tier 1+2,2,20,2,2,8.5076
+Joint Tier 1+2,2,20,2,3,8.0833
+Joint Tier 1+2,2,20,2,4,7.8126
+Joint Tier 1+2,2,20,2,5,7.6392
+Joint Tier 1+2,2,20,3,0,8.3049
+Joint Tier 1+2,2,20,3,1,8.5458
+Joint Tier 1+2,2,20,3,2,8.8352
+Joint Tier 1+2,2,20,3,3,9.0341
+Joint Tier 1+2,2,20,3,4,9.1360
+Joint Tier 1+2,2,20,3,5,9.1662
+Joint Tier 1+2,2,20,4,0,10.3797
+Joint Tier 1+2,2,20,4,1,8.5970
+Joint Tier 1+2,2,20,4,2,8.1010
+Joint Tier 1+2,2,20,4,3,8.0253
+Joint Tier 1+2,2,20,4,4,8.0725
+Joint Tier 1+2,2,20,4,5,8.0961
+Joint Tier 1+2,5,10,0,0,4.8781
+Joint Tier 1+2,5,10,0,1,4.7313
+Joint Tier 1+2,5,10,0,2,4.6584
+Joint Tier 1+2,5,10,0,3,4.4976
+Joint Tier 1+2,5,10,0,4,4.2513
+Joint Tier 1+2,5,10,0,5,3.9651
+Joint Tier 1+2,5,10,1,0,6.9839
+Joint Tier 1+2,5,10,1,1,6.9694
+Joint Tier 1+2,5,10,1,2,6.9760
+Joint Tier 1+2,5,10,1,3,6.9934
+Joint Tier 1+2,5,10,1,4,7.0180
+Joint Tier 1+2,5,10,1,5,7.0469
+Joint Tier 1+2,5,10,2,0,4.6634
+Joint Tier 1+2,5,10,2,1,4.1417
+Joint Tier 1+2,5,10,2,2,3.7701
+Joint Tier 1+2,5,10,2,3,3.5062
+Joint Tier 1+2,5,10,2,4,3.3127
+Joint Tier 1+2,5,10,2,5,3.1670
+Joint Tier 1+2,5,10,3,0,6.4420
+Joint Tier 1+2,5,10,3,1,5.7326
+Joint Tier 1+2,5,10,3,2,5.2157
+Joint Tier 1+2,5,10,3,3,4.8294
+Joint Tier 1+2,5,10,3,4,4.5284
+Joint Tier 1+2,5,10,3,5,4.2839
+Joint Tier 1+2,5,10,4,0,9.9091
+Joint Tier 1+2,5,10,4,1,9.5737
+Joint Tier 1+2,5,10,4,2,9.2044
+Joint Tier 1+2,5,10,4,3,8.8038
+Joint Tier 1+2,5,10,4,4,8.3930
+Joint Tier 1+2,5,10,4,5,7.9921
+Joint Tier 1+2,5,11,0,0,4.3632
+Joint Tier 1+2,5,11,0,1,4.5976
+Joint Tier 1+2,5,11,0,2,4.8153
+Joint Tier 1+2,5,11,0,3,4.9289
+Joint Tier 1+2,5,11,0,4,4.9274
+Joint Tier 1+2,5,11,0,5,4.8332
+Joint Tier 1+2,5,11,1,0,5.6506
+Joint Tier 1+2,5,11,1,1,5.0682
+Joint Tier 1+2,5,11,1,2,4.6436
+Joint Tier 1+2,5,11,1,3,4.3094
+Joint Tier 1+2,5,11,1,4,4.0340
+Joint Tier 1+2,5,11,1,5,3.8001
+Joint Tier 1+2,5,11,2,0,4.2814
+Joint Tier 1+2,5,11,2,1,3.7802
+Joint Tier 1+2,5,11,2,2,3.4601
+Joint Tier 1+2,5,11,2,3,3.2476
+Joint Tier 1+2,5,11,2,4,3.0951
+Joint Tier 1+2,5,11,2,5,2.9735
+Joint Tier 1+2,5,11,3,0,5.7378
+Joint Tier 1+2,5,11,3,1,4.6358
+Joint Tier 1+2,5,11,3,2,3.9287
+Joint Tier 1+2,5,11,3,3,3.4564
+Joint Tier 1+2,5,11,3,4,3.1274
+Joint Tier 1+2,5,11,3,5,2.8832
+Joint Tier 1+2,5,11,4,0,4.0094
+Joint Tier 1+2,5,11,4,1,3.6871
+Joint Tier 1+2,5,11,4,2,3.3927
+Joint Tier 1+2,5,11,4,3,3.1250
+Joint Tier 1+2,5,11,4,4,2.8823
+Joint Tier 1+2,5,11,4,5,2.6631
+Joint Tier 1+2,5,13,0,0,2.2601
+Joint Tier 1+2,5,13,0,1,2.0525
+Joint Tier 1+2,5,13,0,2,1.8588
+Joint Tier 1+2,5,13,0,3,1.6738
+Joint Tier 1+2,5,13,0,4,1.5008
+Joint Tier 1+2,5,13,0,5,1.3455
+Joint Tier 1+2,5,13,1,0,2.0971
+Joint Tier 1+2,5,13,1,1,1.8671
+Joint Tier 1+2,5,13,1,2,1.6695
+Joint Tier 1+2,5,13,1,3,1.4996
+Joint Tier 1+2,5,13,1,4,1.3534
+Joint Tier 1+2,5,13,1,5,1.2275
+Joint Tier 1+2,5,13,2,0,2.5600
+Joint Tier 1+2,5,13,2,1,2.3630
+Joint Tier 1+2,5,13,2,2,2.2120
+Joint Tier 1+2,5,13,2,3,2.0955
+Joint Tier 1+2,5,13,2,4,2.0018
+Joint Tier 1+2,5,13,2,5,1.9222
+Joint Tier 1+2,5,13,3,0,1.9051
+Joint Tier 1+2,5,13,3,1,1.5970
+Joint Tier 1+2,5,13,3,2,1.4230
+Joint Tier 1+2,5,13,3,3,1.3061
+Joint Tier 1+2,5,13,3,4,1.2224
+Joint Tier 1+2,5,13,3,5,1.1635
+Joint Tier 1+2,5,13,4,0,2.6272
+Joint Tier 1+2,5,13,4,1,2.2868
+Joint Tier 1+2,5,13,4,2,2.0712
+Joint Tier 1+2,5,13,4,3,1.9065
+Joint Tier 1+2,5,13,4,4,1.7698
+Joint Tier 1+2,5,13,4,5,1.6520
+Joint Tier 1+2,5,20,0,0,9.1483
+Joint Tier 1+2,5,20,0,1,8.3609
+Joint Tier 1+2,5,20,0,2,7.9323
+Joint Tier 1+2,5,20,0,3,7.6050
+Joint Tier 1+2,5,20,0,4,7.3260
+Joint Tier 1+2,5,20,0,5,7.0903
+Joint Tier 1+2,5,20,1,0,8.6772
+Joint Tier 1+2,5,20,1,1,7.3379
+Joint Tier 1+2,5,20,1,2,6.4831
+Joint Tier 1+2,5,20,1,3,5.9039
+Joint Tier 1+2,5,20,1,4,5.4848
+Joint Tier 1+2,5,20,1,5,5.1592
+Joint Tier 1+2,5,20,2,0,7.9453
+Joint Tier 1+2,5,20,2,1,6.8451
+Joint Tier 1+2,5,20,2,2,6.0977
+Joint Tier 1+2,5,20,2,3,5.5135
+Joint Tier 1+2,5,20,2,4,5.0178
+Joint Tier 1+2,5,20,2,5,4.5807
+Joint Tier 1+2,5,20,3,0,8.3360
+Joint Tier 1+2,5,20,3,1,7.4005
+Joint Tier 1+2,5,20,3,2,6.7808
+Joint Tier 1+2,5,20,3,3,6.3888
+Joint Tier 1+2,5,20,3,4,6.1573
+Joint Tier 1+2,5,20,3,5,6.0355
+Joint Tier 1+2,5,20,4,0,12.7121
+Joint Tier 1+2,5,20,4,1,12.0147
+Joint Tier 1+2,5,20,4,2,11.5873
+Joint Tier 1+2,5,20,4,3,11.2787
+Joint Tier 1+2,5,20,4,4,11.0257
+Joint Tier 1+2,5,20,4,5,10.7975
+Joint Tier 1+2,10,10,0,0,7.1503
+Joint Tier 1+2,10,10,0,1,6.8396
+Joint Tier 1+2,10,10,0,2,6.5844
+Joint Tier 1+2,10,10,0,3,6.3717
+Joint Tier 1+2,10,10,0,4,6.1928
+Joint Tier 1+2,10,10,0,5,6.0408
+Joint Tier 1+2,10,10,1,0,5.7066
+Joint Tier 1+2,10,10,1,1,5.2885
+Joint Tier 1+2,10,10,1,2,4.8814
+Joint Tier 1+2,10,10,1,3,4.4883
+Joint Tier 1+2,10,10,1,4,4.1143
+Joint Tier 1+2,10,10,1,5,3.7641
+Joint Tier 1+2,10,10,2,0,7.3999
+Joint Tier 1+2,10,10,2,1,6.6798
+Joint Tier 1+2,10,10,2,2,6.1179
+Joint Tier 1+2,10,10,2,3,5.6636
+Joint Tier 1+2,10,10,2,4,5.2818
+Joint Tier 1+2,10,10,2,5,4.9507
+Joint Tier 1+2,10,10,3,0,5.7140
+Joint Tier 1+2,10,10,3,1,5.1497
+Joint Tier 1+2,10,10,3,2,4.6817
+Joint Tier 1+2,10,10,3,3,4.2984
+Joint Tier 1+2,10,10,3,4,3.9917
+Joint Tier 1+2,10,10,3,5,3.7511
+Joint Tier 1+2,10,10,4,0,4.5912
+Joint Tier 1+2,10,10,4,1,4.2312
+Joint Tier 1+2,10,10,4,2,3.8903
+Joint Tier 1+2,10,10,4,3,3.5689
+Joint Tier 1+2,10,10,4,4,3.2711
+Joint Tier 1+2,10,10,4,5,3.0036
+Joint Tier 1+2,10,11,0,0,3.5572
+Joint Tier 1+2,10,11,0,1,3.3210
+Joint Tier 1+2,10,11,0,2,3.1187
+Joint Tier 1+2,10,11,0,3,2.9358
+Joint Tier 1+2,10,11,0,4,2.7656
+Joint Tier 1+2,10,11,0,5,2.6050
+Joint Tier 1+2,10,11,1,0,3.5102
+Joint Tier 1+2,10,11,1,1,3.0746
+Joint Tier 1+2,10,11,1,2,2.8790
+Joint Tier 1+2,10,11,1,3,2.7632
+Joint Tier 1+2,10,11,1,4,2.6788
+Joint Tier 1+2,10,11,1,5,2.6072
+Joint Tier 1+2,10,11,2,0,3.5095
+Joint Tier 1+2,10,11,2,1,3.3221
+Joint Tier 1+2,10,11,2,2,3.1957
+Joint Tier 1+2,10,11,2,3,3.0922
+Joint Tier 1+2,10,11,2,4,2.9986
+Joint Tier 1+2,10,11,2,5,2.9130
+Joint Tier 1+2,10,11,3,0,4.6500
+Joint Tier 1+2,10,11,3,1,3.8839
+Joint Tier 1+2,10,11,3,2,3.3804
+Joint Tier 1+2,10,11,3,3,2.9950
+Joint Tier 1+2,10,11,3,4,2.6787
+Joint Tier 1+2,10,11,3,5,2.4116
+Joint Tier 1+2,10,11,4,0,4.8395
+Joint Tier 1+2,10,11,4,1,4.3551
+Joint Tier 1+2,10,11,4,2,3.9701
+Joint Tier 1+2,10,11,4,3,3.6613
+Joint Tier 1+2,10,11,4,4,3.4069
+Joint Tier 1+2,10,11,4,5,3.1870
+Joint Tier 1+2,10,13,0,0,3.3502
+Joint Tier 1+2,10,13,0,1,3.0372
+Joint Tier 1+2,10,13,0,2,2.7399
+Joint Tier 1+2,10,13,0,3,2.4665
+Joint Tier 1+2,10,13,0,4,2.2197
+Joint Tier 1+2,10,13,0,5,1.9987
+Joint Tier 1+2,10,13,1,0,2.5143
+Joint Tier 1+2,10,13,1,1,2.2895
+Joint Tier 1+2,10,13,1,2,2.0986
+Joint Tier 1+2,10,13,1,3,1.9346
+Joint Tier 1+2,10,13,1,4,1.7922
+Joint Tier 1+2,10,13,1,5,1.6671
+Joint Tier 1+2,10,13,2,0,2.7545
+Joint Tier 1+2,10,13,2,1,2.4633
+Joint Tier 1+2,10,13,2,2,2.2224
+Joint Tier 1+2,10,13,2,3,2.0218
+Joint Tier 1+2,10,13,2,4,1.8551
+Joint Tier 1+2,10,13,2,5,1.7171
+Joint Tier 1+2,10,13,3,0,2.1072
+Joint Tier 1+2,10,13,3,1,1.9254
+Joint Tier 1+2,10,13,3,2,1.8006
+Joint Tier 1+2,10,13,3,3,1.7043
+Joint Tier 1+2,10,13,3,4,1.6228
+Joint Tier 1+2,10,13,3,5,1.5482
+Joint Tier 1+2,10,13,4,0,3.2845
+Joint Tier 1+2,10,13,4,1,3.1523
+Joint Tier 1+2,10,13,4,2,3.0395
+Joint Tier 1+2,10,13,4,3,2.9366
+Joint Tier 1+2,10,13,4,4,2.8404
+Joint Tier 1+2,10,13,4,5,2.7500
+Joint Tier 1+2,10,20,0,0,6.9667
+Joint Tier 1+2,10,20,0,1,6.2419
+Joint Tier 1+2,10,20,0,2,5.5964
+Joint Tier 1+2,10,20,0,3,5.0190
+Joint Tier 1+2,10,20,0,4,4.5034
+Joint Tier 1+2,10,20,0,5,4.0456
+Joint Tier 1+2,10,20,1,0,8.7084
+Joint Tier 1+2,10,20,1,1,7.5266
+Joint Tier 1+2,10,20,1,2,6.6089
+Joint Tier 1+2,10,20,1,3,5.8666
+Joint Tier 1+2,10,20,1,4,5.2508
+Joint Tier 1+2,10,20,1,5,4.7327
+Joint Tier 1+2,10,20,2,0,7.7605
+Joint Tier 1+2,10,20,2,1,7.0094
+Joint Tier 1+2,10,20,2,2,6.3356
+Joint Tier 1+2,10,20,2,3,5.7229
+Joint Tier 1+2,10,20,2,4,5.1666
+Joint Tier 1+2,10,20,2,5,4.6661
+Joint Tier 1+2,10,20,3,0,9.0952
+Joint Tier 1+2,10,20,3,1,7.8133
+Joint Tier 1+2,10,20,3,2,6.8074
+Joint Tier 1+2,10,20,3,3,5.9893
+Joint Tier 1+2,10,20,3,4,5.3089
+Joint Tier 1+2,10,20,3,5,4.7341
+Joint Tier 1+2,10,20,4,0,10.6966
+Joint Tier 1+2,10,20,4,1,10.0727
+Joint Tier 1+2,10,20,4,2,9.5424
+Joint Tier 1+2,10,20,4,3,9.0539
+Joint Tier 1+2,10,20,4,4,8.5829
+Joint Tier 1+2,10,20,4,5,8.1191
+Joint Tier 1+2,20,10,0,0,8.0601
+Joint Tier 1+2,20,10,0,1,7.1186
+Joint Tier 1+2,20,10,0,2,6.2285
+Joint Tier 1+2,20,10,0,3,5.4080
+Joint Tier 1+2,20,10,0,4,4.6704
+Joint Tier 1+2,20,10,0,5,4.0229
+Joint Tier 1+2,20,10,1,0,5.5153
+Joint Tier 1+2,20,10,1,1,5.0063
+Joint Tier 1+2,20,10,1,2,4.5345
+Joint Tier 1+2,20,10,1,3,4.0964
+Joint Tier 1+2,20,10,1,4,3.6938
+Joint Tier 1+2,20,10,1,5,3.3293
+Joint Tier 1+2,20,10,2,0,6.1678
+Joint Tier 1+2,20,10,2,1,5.7851
+Joint Tier 1+2,20,10,2,2,5.4238
+Joint Tier 1+2,20,10,2,3,5.0831
+Joint Tier 1+2,20,10,2,4,4.7628
+Joint Tier 1+2,20,10,2,5,4.4635
+Joint Tier 1+2,20,10,3,0,7.7229
+Joint Tier 1+2,20,10,3,1,7.1292
+Joint Tier 1+2,20,10,3,2,6.5624
+Joint Tier 1+2,20,10,3,3,6.0307
+Joint Tier 1+2,20,10,3,4,5.5382
+Joint Tier 1+2,20,10,3,5,5.0861
+Joint Tier 1+2,20,10,4,0,3.9757
+Joint Tier 1+2,20,10,4,1,3.7872
+Joint Tier 1+2,20,10,4,2,3.6123
+Joint Tier 1+2,20,10,4,3,3.4465
+Joint Tier 1+2,20,10,4,4,3.2857
+Joint Tier 1+2,20,10,4,5,3.1283
+Joint Tier 1+2,20,11,0,0,4.4863
+Joint Tier 1+2,20,11,0,1,4.1340
+Joint Tier 1+2,20,11,0,2,3.8095
+Joint Tier 1+2,20,11,0,3,3.5130
+Joint Tier 1+2,20,11,0,4,3.2441
+Joint Tier 1+2,20,11,0,5,3.0023
+Joint Tier 1+2,20,11,1,0,4.2124
+Joint Tier 1+2,20,11,1,1,3.7215
+Joint Tier 1+2,20,11,1,2,3.3744
+Joint Tier 1+2,20,11,1,3,3.0763
+Joint Tier 1+2,20,11,1,4,2.7972
+Joint Tier 1+2,20,11,1,5,2.5294
+Joint Tier 1+2,20,11,2,0,4.5272
+Joint Tier 1+2,20,11,2,1,4.1312
+Joint Tier 1+2,20,11,2,2,3.7708
+Joint Tier 1+2,20,11,2,3,3.4466
+Joint Tier 1+2,20,11,2,4,3.1553
+Joint Tier 1+2,20,11,2,5,2.8923
+Joint Tier 1+2,20,11,3,0,5.1495
+Joint Tier 1+2,20,11,3,1,4.5167
+Joint Tier 1+2,20,11,3,2,4.0253
+Joint Tier 1+2,20,11,3,3,3.6220
+Joint Tier 1+2,20,11,3,4,3.2798
+Joint Tier 1+2,20,11,3,5,2.9839
+Joint Tier 1+2,20,11,4,0,5.0906
+Joint Tier 1+2,20,11,4,1,4.6602
+Joint Tier 1+2,20,11,4,2,4.2829
+Joint Tier 1+2,20,11,4,3,3.9241
+Joint Tier 1+2,20,11,4,4,3.5755
+Joint Tier 1+2,20,11,4,5,3.2380
+Joint Tier 1+2,20,13,0,0,2.4713
+Joint Tier 1+2,20,13,0,1,2.1884
+Joint Tier 1+2,20,13,0,2,1.9649
+Joint Tier 1+2,20,13,0,3,1.7857
+Joint Tier 1+2,20,13,0,4,1.6371
+Joint Tier 1+2,20,13,0,5,1.5089
+Joint Tier 1+2,20,13,1,0,2.5477
+Joint Tier 1+2,20,13,1,1,2.3483
+Joint Tier 1+2,20,13,1,2,2.1539
+Joint Tier 1+2,20,13,1,3,1.9685
+Joint Tier 1+2,20,13,1,4,1.7966
+Joint Tier 1+2,20,13,1,5,1.6408
+Joint Tier 1+2,20,13,2,0,2.9373
+Joint Tier 1+2,20,13,2,1,2.7471
+Joint Tier 1+2,20,13,2,2,2.5933
+Joint Tier 1+2,20,13,2,3,2.4557
+Joint Tier 1+2,20,13,2,4,2.3273
+Joint Tier 1+2,20,13,2,5,2.2058
+Joint Tier 1+2,20,13,3,0,2.2717
+Joint Tier 1+2,20,13,3,1,2.0144
+Joint Tier 1+2,20,13,3,2,1.8161
+Joint Tier 1+2,20,13,3,3,1.6450
+Joint Tier 1+2,20,13,3,4,1.4913
+Joint Tier 1+2,20,13,3,5,1.3525
+Joint Tier 1+2,20,13,4,0,2.9265
+Joint Tier 1+2,20,13,4,1,2.6694
+Joint Tier 1+2,20,13,4,2,2.4465
+Joint Tier 1+2,20,13,4,3,2.2521
+Joint Tier 1+2,20,13,4,4,2.0811
+Joint Tier 1+2,20,13,4,5,1.9296
+Joint Tier 1+2,20,20,0,0,6.4563
+Joint Tier 1+2,20,20,0,1,5.9521
+Joint Tier 1+2,20,20,0,2,5.4632
+Joint Tier 1+2,20,20,0,3,4.9855
+Joint Tier 1+2,20,20,0,4,4.5247
+Joint Tier 1+2,20,20,0,5,4.0879
+Joint Tier 1+2,20,20,1,0,10.4954
+Joint Tier 1+2,20,20,1,1,9.2009
+Joint Tier 1+2,20,20,1,2,8.0532
+Joint Tier 1+2,20,20,1,3,7.0623
+Joint Tier 1+2,20,20,1,4,6.2225
+Joint Tier 1+2,20,20,1,5,5.5187
+Joint Tier 1+2,20,20,2,0,8.0994
+Joint Tier 1+2,20,20,2,1,7.2404
+Joint Tier 1+2,20,20,2,2,6.4794
+Joint Tier 1+2,20,20,2,3,5.8011
+Joint Tier 1+2,20,20,2,4,5.1983
+Joint Tier 1+2,20,20,2,5,4.6668
+Joint Tier 1+2,20,20,3,0,6.8637
+Joint Tier 1+2,20,20,3,1,6.1069
+Joint Tier 1+2,20,20,3,2,5.4840
+Joint Tier 1+2,20,20,3,3,4.9584
+Joint Tier 1+2,20,20,3,4,4.5067
+Joint Tier 1+2,20,20,3,5,4.1122
+Joint Tier 1+2,20,20,4,0,6.0486
+Joint Tier 1+2,20,20,4,1,5.5392
+Joint Tier 1+2,20,20,4,2,5.0492
+Joint Tier 1+2,20,20,4,3,4.5863
+Joint Tier 1+2,20,20,4,4,4.1557
+Joint Tier 1+2,20,20,4,5,3.7605

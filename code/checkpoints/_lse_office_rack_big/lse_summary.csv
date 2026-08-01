@@ -1,0 +1,2 @@
+scene,n,mode,MAE_m,RMSE_m,p50_m,p95_m,max_m,MAE_x_m,MAE_y_m,MAE_z_m_or_blank
+big,463,2d,14.7179,16.7977,10.7413,31.5276,274.7963,5.6521,12.9921,

@@ -25,9 +25,9 @@ __pycache__/
 *.pyo
 .ipynb_checkpoints/
 
-# Datasets (too large for git, but kept locally for reproducibility)
-code/data/*.csv
-code/data/*.pt
+# Datasets now tracked in repo (private), keep ignoring local-only artifacts
+# code/data/*.csv
+# code/data/*.pt
 
 # Trained model checkpoints are kept (small, useful for paper figures)
 # but ignore any oversized artifacts

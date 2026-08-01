@@ -1,0 +1,24 @@
+col_id,anchor_id,X_m,Y_m,Z_m,notes
+A1,a1,15.0,5.5,2.85,ceiling
+A2,a10,-5.5,-5.5,2.85,ceiling
+A3,a11,-0.5,-5.5,2.85,ceiling
+A4,a12,4.5,-5.5,2.85,ceiling
+A5,a13,4.5,-5.5,0.30,floor
+A6,a14,15.0,-5.5,2.85,ceiling
+A7,a15,15.0,-5.5,0.30,floor
+A8,a16,-10.0,2.75,2.85,ceiling (rack-near)
+A9,a17,3.5,2.75,2.85,ceiling (rack-near)
+A10,a18,-10.0,0.0,2.85,ceiling (rack-near)
+A11,a19,3.5,0.0,2.85,ceiling (rack-near)
+A12,a2,15.0,5.5,0.30,floor
+A13,a20,-10.0,-2.75,2.85,ceiling (rack-near)
+A14,a21,3.5,-2.75,2.85,ceiling (rack-near)
+A15,a22,-3.25,1.38,2.85,"ceiling (rack-near, middle rack above)"
+A16,a23,-3.25,-1.38,2.85,"ceiling (rack-near, middle rack above)"
+A17,a3,4.5,5.5,2.85,ceiling
+A18,a4,4.5,5.5,0.30,floor
+A19,a5,-5.5,5.5,2.85,ceiling
+A20,a6,-15.0,5.5,2.85,ceiling
+A21,a7,-15.0,1.8,2.85,ceiling
+A22,a8,-15.0,-1.8,2.85,ceiling
+A23,a9,-15.0,-5.5,2.85,ceiling

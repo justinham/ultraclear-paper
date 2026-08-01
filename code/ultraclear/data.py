@@ -186,12 +186,17 @@ class TensorUWB(Dataset):
 
 
 def make_synthetic(cfg: Config, seed: int = 0) -> Tuple[List, List]:
-    """Split 80/20 by *environment* (so val sees unseen envs) for the standard
-    supervised baseline path. Tier 1 (MAML) handles its own env-aware split."""
+    """Split by environment for the standard supervised baseline path.
+    10 train / 2 val (envs 0-9 train, 10-11 val) when n_synthetic_envs=12,
+    matching the Sionna 21-env protocol. For other env counts, falls
+    back to 80/20. Tier 1 (MAML) handles its own env-aware split."""
     items = build_synthetic_dataset(cfg, seed=seed)
     env_ids = sorted({it[2] for it in items})
-    n_train_envs = max(1, int(0.8 * len(env_ids)))
-    train_envs = set(env_ids[:n_train_envs])
+    if len(env_ids) == 12:
+        train_envs = set(env_ids[:10])
+    else:
+        n_train_envs = max(1, int(0.8 * len(env_ids)))
+        train_envs = set(env_ids[:n_train_envs])
     train = [it for it in items if it[2] in train_envs]
     val = [it for it in items if it[2] not in train_envs]
     return train, val

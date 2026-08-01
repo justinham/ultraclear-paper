@@ -136,7 +136,7 @@ class SionnaGridWindowF2Dataset(Dataset):
         x = feat[s : s + self.seq_len]                              # (T, M, 2)
         if hasattr(self, "norm_mean"):
             x = self.normalize(x)
-        y = tag_xy[s + self.seq_len // 2]                          # (2,)
+        y = tag_xy[s : s + self.seq_len]                          # (T, 2) per-timestep
         return (
             torch.from_numpy(x).float(),
             torch.from_numpy(y).float(),
@@ -177,11 +177,13 @@ def run_tier0(
         for X, _, _, _, _ in train_loader:
             X = X.to(device)
             opt.zero_grad()
-            x_pred, mask = model(X)
+            x_pred, mask, _x = model(X)
             # masked weighted MSE, normalized units. After z-score the
             # per-channel scale is matched, so weights here are pure
             # *task* preferences (not unit-balancing hacks).
-            loss = ssl_loss(x_pred, X, mask, channel_weights=cw)
+            loss = ssl_loss(x_pred, X, mask, channel_weights=cw,
+                            loss_on_visible=cfg.loss_on_visible,
+                            visible_weight=cfg.visible_weight)
             loss.backward()
             opt.step()
             total += loss.item() * X.size(0)
@@ -195,8 +197,10 @@ def run_tier0(
             with torch.no_grad():
                 for X, _, _, _, _ in val_loader:
                     X = X.to(device)
-                    x_pred, mask = model(X)
-                    vloss = ssl_loss(x_pred, X, mask, channel_weights=cw)
+                    x_pred, mask, _x = model(X)
+                    vloss = ssl_loss(x_pred, X, mask, channel_weights=cw,
+                                     loss_on_visible=cfg.loss_on_visible,
+                                     visible_weight=cfg.visible_weight)
                     vtotal += vloss.item() * X.size(0)
                     vn += X.size(0)
             val_loss = vtotal / max(1, vn)
@@ -229,6 +233,15 @@ def main():
                    help="per-channel loss weights, e.g. '3.0 1.0' to "
                         "upweight ToA over AoA by 3x. Default: equal "
                         "weights (1.0 for each channel).")
+    p.add_argument("--loss_on_visible", action="store_true",
+                   help="include visible (unmasked) cells in the loss "
+                        "(DAE-style full-reconstruction loss, in addition "
+                        "to the masked loss). Use --visible_weight to "
+                        "down-weight the visible term relative to masked.")
+    p.add_argument("--visible_weight", type=float, default=1.0,
+                   help="scale factor for the visible-cell loss term. "
+                        "Only used when --loss_on_visible is set. "
+                        "Use 0.1-0.3 to make visible cells a regularizer.")
     p.add_argument("--out", default=None)
     args = p.parse_args()
 
@@ -250,12 +263,17 @@ def main():
     torch.manual_seed(cfg.seed)
     np.random.seed(cfg.seed)
 
+    if args.loss_on_visible:
+        cfg.loss_on_visible = True
+    if args.visible_weight != 1.0:
+        cfg.visible_weight = args.visible_weight
     if args.quick:
         cfg.ssl_epochs = 3
         cfg.ssl_batch_size = 16
 
     print(f"device: {cfg.device}  seed: {cfg.seed}  n_channels: {cfg.n_channels}  "
-          f"mask_ratio: {cfg.mask_ratio}  channel_weights: {list(cfg.channel_weights)}")
+          f"mask_ratio: {cfg.mask_ratio}  channel_weights: {list(cfg.channel_weights)}  "
+          f"loss_on_visible={cfg.loss_on_visible}  visible_weight={cfg.visible_weight}")
     print(f"csv: {args.csv}")
     print("building sliding-window dataset (T=32 over trials, F=2)...")
     full_ds = SionnaGridWindowF2Dataset(

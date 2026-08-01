@@ -1,0 +1,3 @@
+epoch,train_mse_norm,train_mae_norm,val_mae_norm
+1,0.305302,0.249444,0.958113
+10,0.036266,0.114381,0.886306

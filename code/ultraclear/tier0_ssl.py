@@ -38,8 +38,24 @@ def random_mask(
 
 class SSLHead(nn.Module):
     """Predicts the original F-channel values at masked positions from the
-    encoder output. We pool the encoder state at the masked (T, M) cells
-    and run a small MLP.
+    encoder output, with a hard skip-connection that preserves the raw
+    input at *visible* cells.
+
+    Why the hard skip: in the joint Tier 1+2 trainer, the encoder features
+    are passed to the location head, but the head also benefits from the
+    raw ToA values at visible cells. If the encoder has to choose between
+    being a good "denoiser" (helps masked cells) and a good "passthrough"
+    (helps visible cells), it picks one. A 50K-param encoder can't do
+    both well simultaneously, and the SSL loss only scores masked cells
+    -- so the encoder learns to denoise at the cost of mangling visible
+    cells. On held-out scenes, the visible-cell RMSE blows up to
+    ~1.8 m for ToA (vs the 0.6 m masked-cell RMSE) and ~52 degrees for
+    AoA. The hard skip removes this pathology: at visible cells the head
+    just outputs the input (zero reconstruction error), and the encoder
+    only has to learn the inference task at masked cells.
+
+    The head is otherwise a 2-layer MLP applied to the encoder features,
+    same as the original SSLHead.
     """
 
     def __init__(self, d_model: int, n_channels: int, hidden: int = 64):
@@ -50,16 +66,34 @@ class SSLHead(nn.Module):
             nn.Linear(hidden, n_channels),
         )
 
-    def forward(self, h: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-        """h: (B, T, M, d_model)  mask: (B, T, M) bool.
-        Returns predictions of shape (B, T, M, F), at *all* positions;
-        caller will select masked positions for the loss.
+    def forward(
+        self,
+        h: torch.Tensor,
+        x_input: torch.Tensor,
+        mask: torch.Tensor,
+    ) -> torch.Tensor:
+        """h: (B, T, M, d_model) encoder features.
+        x_input: (B, T, M, F) the ORIGINAL (un-masked) input -- the
+            skip-connection source.
+        mask: (B, T, M) bool, True at masked positions.
+        Returns predictions of shape (B, T, M, F) where:
+            - at visible cells (~mask): the raw x_input value (passthrough)
+            - at masked cells (mask): the head's inference from h
         """
-        return self.net(h)
+        inferred = self.net(h)                                # (B, T, M, F)
+        out = torch.where(mask.unsqueeze(-1), inferred, x_input)
+        return out
 
 
 class SSLPretrainer(nn.Module):
-    """Encoder + masked-prediction head."""
+    """Encoder + masked-prediction head with hard skip-connection.
+
+    The skip-connection means the model output equals the input at
+    visible cells (zero reconstruction error there) and equals the
+    head's prediction at masked cells. This keeps the encoder's
+    pretraining loss focused on the inference task only -- the
+    passthrough is a freebie.
+    """
 
     def __init__(self, cfg: Config):
         super().__init__()
@@ -67,14 +101,19 @@ class SSLPretrainer(nn.Module):
         self.encoder = ASTAEncoder(cfg)
         self.head = SSLHead(cfg.d_model, cfg.n_channels)
 
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """x: (B, T, M, F) raw measurements.
-        Returns (x_pred, mask) where x_pred is the prediction at every cell.
+        Returns (x_pred, mask, x_input) where:
+            - x_pred: prediction at every cell (passthrough at visible,
+                head(encoder) at masked)
+            - mask: (B, T, M) bool, True at masked positions
+            - x_input: the original input, exposed so the loss function
+                and downstream code can access the un-masked measurements
         """
         x_masked, mask = random_mask(x, self.cfg.mask_ratio)
         h = self.encoder(x_masked)
-        x_pred = self.head(h, mask)
-        return x_pred, mask
+        x_pred = self.head(h, x, mask)
+        return x_pred, mask, x
 
 
 def ssl_loss(
@@ -82,8 +121,17 @@ def ssl_loss(
     x_true: torch.Tensor,
     mask: torch.Tensor,
     channel_weights: torch.Tensor | None = None,
+    loss_on_visible: bool = False,
+    visible_weight: float = 1.0,
 ) -> torch.Tensor:
-    """Weighted MSE on masked cells only.
+    """Weighted MSE on masked cells, optionally plus visible cells.
+
+    With the hard-skip SSLHead, the visible-cell loss is identically zero
+    (the head outputs the input). The `loss_on_visible` flag is now mostly
+    a no-op for the default model -- it would only matter if the head were
+    changed to a soft/gated skip that produces non-input outputs at visible
+    cells. We keep the flag for backward compatibility with the
+    `train_tier0_sionna.py` CLI and the DAE-style ablation.
 
     x_pred, x_true: (B, T, M, F).
     mask: (B, T, M) bool.
@@ -92,6 +140,10 @@ def ssl_loss(
         get weight 1.0 (the historical F=1 default; for F=2 this means
         ToA and AoA contribute equally to the loss, which after per-
         channel z-scoring is the natural 50/50 split).
+    loss_on_visible: if True, also include the visible cells in the
+        loss. With the hard-skip head this contributes zero; with a
+        soft-skip head it would penalize deviations from passthrough.
+    visible_weight: scale factor on the visible-cell loss term.
 
     We intentionally keep the per-channel weights as a multiplicative
     factor on the squared error *before* averaging over channels, so
@@ -104,6 +156,13 @@ def ssl_loss(
         # broadcast (F,) over (B, T, M, F)
         diff = diff * channel_weights.view(1, 1, 1, -1).to(diff.device)
     diff = diff.mean(dim=-1)                       # (B, T, M)  weighted avg over F
-    diff = diff * mask.float()                     # zero out non-masked
+    n_total = float(diff.numel())                  # B*T*M cells
     n_masked = mask.float().sum().clamp_min(1.0)
-    return diff.sum() / n_masked
+    n_visible = (n_total - n_masked).clamp_min(1.0)
+    diff_masked = diff * mask.float()               # zero out non-masked
+    masked_loss = diff_masked.sum() / n_masked
+    if loss_on_visible:
+        diff_visible = diff * (~mask).float()      # zero out masked
+        visible_loss = diff_visible.sum() / n_visible
+        return masked_loss + visible_weight * visible_loss
+    return masked_loss

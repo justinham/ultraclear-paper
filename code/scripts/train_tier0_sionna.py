@@ -111,7 +111,7 @@ class SionnaGridWindowDataset(Dataset):
         gi, s = self.windows[i]
         feat, tag_xy, _ = self._per_grid[gi]
         x = feat[s : s + self.seq_len]  # (T, M, F)
-        y = tag_xy[s + self.seq_len // 2]  # (2,) middle timestep
+        y = tag_xy[s : s + self.seq_len]  # (T, 2) per-timestep
         # env_id / cond_id: this CSV is a single env, single LOS-only
         # condition (empty_open is 100% LOS per the README), so we use
         # constants. Keeps the (X, y, env, cond) shape contract the
@@ -158,8 +158,10 @@ def run_tier0(
         for X, _, _, _, _ in train_loader:
             X = X.to(device)
             opt.zero_grad()
-            x_pred, mask = model(X)
-            loss = ssl_loss(x_pred, X, mask)
+            x_pred, mask, _x = model(X)
+            loss = ssl_loss(x_pred, X, mask,
+                            loss_on_visible=cfg.loss_on_visible,
+                            visible_weight=cfg.visible_weight)
             loss.backward()
             opt.step()
             total += loss.item() * X.size(0)
@@ -174,8 +176,10 @@ def run_tier0(
             with torch.no_grad():
                 for X, _, _, _, _ in val_loader:
                     X = X.to(device)
-                    x_pred, mask = model(X)
-                    vloss = ssl_loss(x_pred, X, mask)
+                    x_pred, mask, _x = model(X)
+                    vloss = ssl_loss(x_pred, X, mask,
+                                     loss_on_visible=cfg.loss_on_visible,
+                                     visible_weight=cfg.visible_weight)
                     vtotal += vloss.item() * X.size(0)
                     vn += X.size(0)
             val_loss = vtotal / max(1, vn)
@@ -212,6 +216,16 @@ def main():
     p.add_argument("--mask_ratio", type=float, default=None,
                    help="override cfg.mask_ratio for this run "
                         "(e.g., 0.15 for a 15%% random mask)")
+    p.add_argument("--loss_on_visible", action="store_true",
+                   help="include visible (unmasked) cells in the loss "
+                        "(DAE-style full-reconstruction loss, in addition "
+                        "to the masked loss). Use --visible_weight to "
+                        "down-weight the visible term relative to masked.")
+    p.add_argument("--visible_weight", type=float, default=1.0,
+                   help="scale factor for the visible-cell loss term. "
+                        "Only used when --loss_on_visible is set. "
+                        "Use 0.1-0.3 to make visible cells a regularizer "
+                        "rather than the main signal.")
     args = p.parse_args()
 
     cfg = Config()
@@ -222,6 +236,10 @@ def main():
         cfg.ssl_epochs = args.epochs
     if args.mask_ratio is not None:
         cfg.mask_ratio = args.mask_ratio
+    if args.loss_on_visible:
+        cfg.loss_on_visible = True
+    if args.visible_weight != 1.0:
+        cfg.visible_weight = args.visible_weight
     torch.manual_seed(cfg.seed)
     np.random.seed(cfg.seed)
 
@@ -230,7 +248,8 @@ def main():
         cfg.ssl_batch_size = 16
 
     print(f"device: {cfg.device}  seed: {cfg.seed}  n_channels: {cfg.n_channels}  "
-          f"mask_ratio: {cfg.mask_ratio}")
+          f"mask_ratio: {cfg.mask_ratio}  loss_on_visible={getattr(cfg, 'loss_on_visible', False)}  "
+          f"visible_weight={getattr(cfg, 'visible_weight', 1.0)}")
     print(f"csv: {args.csv}")
     print("building sliding-window dataset (T=32 over trials)...")
     full_ds = SionnaGridWindowDataset(

@@ -13,6 +13,8 @@ class Config:
     n_channels: int = 1           # 1 for ToA-only, 2 for ToA+AoA
     seq_len: int = 32             # T (time window length)
     mask_ratio: float = 0.25      # fraction of (anchor, time) cells masked in Tier 0
+    loss_on_visible: bool = False  # if True, include visible cells in the SSL loss (DAE-style)
+    visible_weight: float = 1.0   # scale factor for the visible-cell loss term
 
     # ---- ASTA encoder ----
     d_model: int = 64             # hidden width inside ASTA
@@ -60,7 +62,7 @@ class Config:
     channel_weights: Tuple[float, ...] = (1.0, 1.0)
 
     # synthetic data
-    n_synthetic_envs: int = 8     # how many macro environments to simulate
+    n_synthetic_envs: int = 12    # 10 train + 2 val (envs 0-9 train, 10-11 val)
     samples_per_env: int = 200    # traces per environment
     n_micro_conditions: int = 3   # distinct NLOS/multi-path severities
 
