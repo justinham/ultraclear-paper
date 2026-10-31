@@ -1,0 +1,163 @@
+{
+  "tag": "smoke",
+  "n_folds": 5,
+  "epochs": 300,
+  "seed": 0,
+  "train_script": "scripts.train_tier2_datasame",
+  "folds": [
+    {
+      "fold": 0,
+      "held_indoor": "indoor_garage_parking_01",
+      "held_outdoor": "outdoor_parking_01",
+      "train_scenes": "indoor_garage_parking_02 | indoor_garage_parking_03 | indoor_garage_parking_04 | indoor_garage_parking_05 | outdoor_parking_02 | outdoor_parking_03 | outdoor_parking_04 | outdoor_parking_05",
+      "train_rmse": 2.74,
+      "train_p50": 0.4342,
+      "train_p90": 1.8299,
+      "train_max": 35.7501,
+      "train_f1": 0.584,
+      "held_rmse": 1.4278,
+      "held_p50": 0.419,
+      "held_p90": 0.9726,
+      "held_max": 13.6368,
+      "held_f1": 0.5427,
+      "epochs": 3,
+      "train_seconds": 12.6
+    },
+    {
+      "fold": 1,
+      "held_indoor": "indoor_garage_parking_02",
+      "held_outdoor": "outdoor_parking_02",
+      "train_scenes": "indoor_garage_parking_01 | indoor_garage_parking_03 | indoor_garage_parking_04 | indoor_garage_parking_05 | outdoor_parking_01 | outdoor_parking_03 | outdoor_parking_04 | outdoor_parking_05",
+      "train_rmse": 2.3083,
+      "train_p50": 0.4162,
+      "train_p90": 1.3772,
+      "train_max": 37.2269,
+      "train_f1": 0.486,
+      "held_rmse": 3.6698,
+      "held_p50": 0.4227,
+      "held_p90": 2.5815,
+      "held_max": 36.6947,
+      "held_f1": 0.6675,
+      "epochs": 3,
+      "train_seconds": 12.3
+    },
+    {
+      "fold": 2,
+      "held_indoor": "indoor_garage_parking_03",
+      "held_outdoor": "outdoor_parking_03",
+      "train_scenes": "indoor_garage_parking_01 | indoor_garage_parking_02 | indoor_garage_parking_04 | indoor_garage_parking_05 | outdoor_parking_01 | outdoor_parking_02 | outdoor_parking_04 | outdoor_parking_05",
+      "train_rmse": 2.6829,
+      "train_p50": 0.43,
+      "train_p90": 1.7469,
+      "train_max": 36.0636,
+      "train_f1": 0.5604,
+      "held_rmse": 1.9128,
+      "held_p50": 0.4196,
+      "held_p90": 0.9789,
+      "held_max": 15.6757,
+      "held_f1": 0.4973,
+      "epochs": 3,
+      "train_seconds": 12.3
+    },
+    {
+      "fold": 3,
+      "held_indoor": "indoor_garage_parking_04",
+      "held_outdoor": "outdoor_parking_04",
+      "train_scenes": "indoor_garage_parking_01 | indoor_garage_parking_02 | indoor_garage_parking_03 | indoor_garage_parking_05 | outdoor_parking_01 | outdoor_parking_02 | outdoor_parking_03 | outdoor_parking_05",
+      "train_rmse": 2.6868,
+      "train_p50": 0.4151,
+      "train_p90": 1.386,
+      "train_max": 36.3001,
+      "train_f1": 0.5962,
+      "held_rmse": 2.0146,
+      "held_p50": 0.4263,
+      "held_p90": 2.2023,
+      "held_max": 15.6138,
+      "held_f1": 0.5035,
+      "epochs": 3,
+      "train_seconds": 12.5
+    },
+    {
+      "fold": 4,
+      "held_indoor": "indoor_garage_parking_05",
+      "held_outdoor": "outdoor_parking_05",
+      "train_scenes": "indoor_garage_parking_01 | indoor_garage_parking_02 | indoor_garage_parking_03 | indoor_garage_parking_04 | outdoor_parking_01 | outdoor_parking_02 | outdoor_parking_03 | outdoor_parking_04",
+      "train_rmse": 2.3763,
+      "train_p50": 0.4181,
+      "train_p90": 1.2296,
+      "train_max": 37.1871,
+      "train_f1": 0.5662,
+      "held_rmse": 3.5124,
+      "held_p50": 0.4351,
+      "held_p90": 2.7905,
+      "held_max": 38.4471,
+      "held_f1": 0.5346,
+      "epochs": 3,
+      "train_seconds": 12.1
+    }
+  ],
+  "held_out": {
+    "rmse": {
+      "mean": 2.50748,
+      "std": 1.0152753183250345,
+      "min": 1.4278,
+      "max": 3.6698
+    },
+    "p50": {
+      "mean": 0.4245399999999999,
+      "std": 0.006578221644183178,
+      "min": 0.419,
+      "max": 0.4351
+    },
+    "p90": {
+      "mean": 1.90516,
+      "std": 0.874239760020099,
+      "min": 0.9726,
+      "max": 2.7905
+    },
+    "max": {
+      "mean": 24.013619999999996,
+      "std": 12.418649424836824,
+      "min": 13.6368,
+      "max": 38.4471
+    },
+    "f1": {
+      "mean": 0.5491199999999999,
+      "std": 0.06897892431750441,
+      "min": 0.4973,
+      "max": 0.6675
+    }
+  },
+  "train": {
+    "rmse": {
+      "mean": 2.55886,
+      "std": 0.20042126384193867,
+      "min": 2.3083,
+      "max": 2.74
+    },
+    "p50": {
+      "mean": 0.42272,
+      "std": 0.008756540412742903,
+      "min": 0.4151,
+      "max": 0.4342
+    },
+    "p90": {
+      "mean": 1.51392,
+      "std": 0.25981569814004696,
+      "min": 1.2296,
+      "max": 1.8299
+    },
+    "max": {
+      "mean": 36.50556,
+      "std": 0.6695316333079409,
+      "min": 35.7501,
+      "max": 37.2269
+    },
+    "f1": {
+      "mean": 0.55856,
+      "std": 0.042984508837487015,
+      "min": 0.486,
+      "max": 0.5962
+    }
+  }
+}

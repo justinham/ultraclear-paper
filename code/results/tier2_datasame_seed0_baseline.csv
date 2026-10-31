@@ -1,0 +1,5 @@
+model,split,held_out_scenes,rmse_m,p50_m,p90_m,max_m,nlos_f1,epochs,ssl_ckpt
+datasame,TRAIN (8 scenes),indoor_garage_parking_03 | outdoor_parking_04,1.3815,0.2469,0.7341,23.4468,0.9546,300,tier0_crossscene_deep_500ep
+datasame,HELD (2 scenes),indoor_garage_parking_03 | outdoor_parking_04,1.2099,0.2438,0.6082,17.0291,0.9657,300,tier0_crossscene_deep_500ep
+twohead,TRAIN (8 scenes),indoor_garage_parking_03 | outdoor_parking_04,4.5933,1.3392,7.9798,31.1605,0.9598,300,tier0_crossscene_deep_500ep
+twohead,HELD (2 scenes),indoor_garage_parking_03 | outdoor_parking_04,4.2692,1.3046,7.7634,17.3959,0.9708,300,tier0_crossscene_deep_500ep
